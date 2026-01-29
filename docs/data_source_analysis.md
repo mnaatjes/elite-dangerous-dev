@@ -67,6 +67,25 @@ This means that for dynamic data like market prices or faction states, the major
     *   **Use Case:** Best suited for applications that need to look up specific items rather than download the entire dataset.
     *   **Restrictions:** The API is rate-limited (e.g., 100 requests per 15 minutes), reinforcing its use for targeted, non-bulk queries.
 
+### EDAstro Map Chart Files - [https://edastro.com/mapcharts/files.html](https://edastro.com/mapcharts/files.html)
+
+*   **What is it?** A collection of specialized datasets derived from EDSM and EDDN data, presented as downloadable files. Unlike the EDAstro API which is for targeted lookups, this is a source for bulk data, albeit in a curated, pre-processed form.
+*   **Data Provided:** A wide variety of specific datasets, such as lists of all Earth-like worlds, systems with high body counts, ringed stars, etc. The data is available as CSV files, with some larger datasets also available as ZIP archives. There are also 7-day rolling JSONL dumps for star systems, stars, and planets.
+*   **Update Frequency:** Most files are updated daily. Some specific files are updated weekly or twice-monthly. The 7-day JSON dumps are updated every other day.
+*   **Use Case:** This is an excellent source for pre-filtered, specialized datasets. Instead of downloading the entire EDSM database and filtering it ourselves, we can use these files for specific analysis tasks or to populate certain tables. For example, the `systems_earthlike.csv` could be used to quickly identify all Earth-like worlds without processing the entire EDSM body dump.
+*   **Schema Analysis (`systems7day.jsonl`):**
+    *   A sample from the 7-day systems JSON Lines file was analyzed. The schema is highly compatible with other sources.
+    *   **Core Keys (Consistent with EDSM/Spansh):**
+        *   `id64` (integer): The unique 64-bit system ID.
+        *   `name` (string): The system name.
+        *   `coords` (object): A nested object with `x`, `y`, `z` floating point coordinates.
+    *   **Additional Useful Keys:**
+        *   `edsm_id` (integer): The corresponding ID in the EDSM database, useful for cross-referencing.
+        *   `sol_dist` (float): Pre-calculated distance from Sol.
+        *   `mainStarType` (string): The description of the main star (e.g., "F (White) Star").
+        *   `bodyCount` (string): The number of bodies in the system.
+    *   **Conclusion:** The EDAstro file dumps are a valuable, pre-processed data source. They contain the essential keys for integration (`id64`, `name`, `coords`) and provide useful, pre-calculated metadata that can simplify the ETL process. Some care must be taken with inconsistent data types (e.g., numbers represented as strings).
+
 ### EDDiscovery
 
 *   **What is it?** A powerful client application that players run. It reads the game journal, provides many in-app tools for explorers, and is a major contributor of data to services like EDSM and EDDN. It is a **source of data**, not a dataset provider.

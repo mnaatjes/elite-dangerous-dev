@@ -30,7 +30,7 @@ graph TD
     B -->|New data found| C[Download .json.gz files<br>to Landing Zone];
     C --> D[Decompress Files];
     D --> F[Load Raw JSON into<br>Staging Tables];
-    F --> G[Run Transform Scripts<br>(Clean, Join, De-duplicate)];
+    F --> G["Run Transform Scripts<br>(Clean, Join, Deduplicate)"];
     G --> H[Upsert into<br>Production Tables];
     H --> I[Log Success/Failure];
     I --> E;
