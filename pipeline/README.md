@@ -8,6 +8,26 @@ The `etl/` subdirectory contains the primary Python-based pipeline for processin
 
 Refer to the `etl/SETUP.md` guide for instructions on how to set up the Python environment and run the scripts.
 
+## V1 Pipeline Flowchart
+
+This flowchart visualizes the V1 data pipeline, which processes the raw data dump into a custom binary file for direct consumption by the C++ engine, bypassing the need for a database.
+
+```mermaid
+graph TD
+    subgraph "Python ETL Script (process_data.py)"
+        A["Start"] --> B["Download systemsWithCoordinates.json.gz"];
+        B --> C["Stream-parse the gzipped JSON<br/>(using ijson)"];
+        C --> D["For each system, extract<br/>id64, x, y, z"];
+        D --> E["Pack and write to<br/>'systems_processed.bin'"];
+    end
+
+    subgraph "C++ Routing Engine"
+        E --> F["Engine loads 'systems_processed.bin'<br/>directly into memory"];
+        F --> G["Build R-Tree from in-memory data"];
+        G --> H["Ready for Routing"];
+    end
+```
+
 ---
 
 ## Testing Strategy
