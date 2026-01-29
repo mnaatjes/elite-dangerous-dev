@@ -45,6 +45,9 @@ This means that for dynamic data like market prices or faction states, the major
 *   **Data Provided:** While the tools are the main feature, Spansh also provides its own data dumps, often pre-filtered for specific use cases (e.g., just neutron stars, just populated systems). These are convenient for specialized applications.
 *   **Accessing the Data:**
     *   **Download Procedure:** Data dumps are available as `.json.gz` files from the "Dumps" page at **https://spansh.co.uk/dumps**.
+    *   **Analyzed Dumps:**
+        *   `systems_neutron.json.gz`: Contains only systems with a neutron star, black hole, or white dwarf. Confirms `id64`, `name`, `coords`, and `mainStar` attributes.
+        *   `systems_1month.json.gz`: Contains all system types updated in the last month. Also confirms the same attribute structure.
 
 ---
 
@@ -59,7 +62,10 @@ This means that for dynamic data like market prices or faction states, the major
 
 *   **What is it?** A website for data visualization, offering maps and charts of the galaxy.
 *   **Primary Data Source:** It is a data consumer, using data from EDSM and EDDN.
-*   **Accessing the Data:** It provides a specialized API for some of its datasets (like the Galactic Exploration Catalog) but does not offer bulk dumps.
+*   **Accessing the Data:** EDAstro provides a public API for targeted queries. It is not a source for bulk data dumps.
+    *   **API Focus:** The API is primarily for retrieving information about individual star systems or points of interest from the Galactic Exploration Catalog (GEC).
+    *   **Use Case:** Best suited for applications that need to look up specific items rather than download the entire dataset.
+    *   **Restrictions:** The API is rate-limited (e.g., 100 requests per 15 minutes), reinforcing its use for targeted, non-bulk queries.
 
 ### EDDiscovery
 
@@ -72,3 +78,18 @@ This means that for dynamic data like market prices or faction states, the major
 ### Elite Dangerous Market Connector (EDMC)
 
 *   **What is it?** A lightweight client application that players run. Its primary purpose is to read the game journal and upload market and exploration data to the EDDN. It is a **source of data**, not a dataset provider.
+
+---
+
+## Community Projects & Code
+
+### klightspeed/EliteDangerousRegionMap
+
+*   **URL:** [https://github.com/klightspeed/EliteDangerousRegionMap](https://github.com/klightspeed/EliteDangerousRegionMap)
+*   **What is it?** A repository containing code and data to determine which of the 42 galactic regions a star system belongs to. It provides working implementations in Python, C#, JavaScript, and Rust.
+*   **Usefulness:** This is a key resource for understanding the galactic grid. The C# and Rust implementations are clear references for porting the coordinate-to-region logic to C++.
+*   **Data File:** `RegionMapData.json`
+    *   **Analysis:** This file contains the pre-computed data necessary for the region-finding algorithm to work. It consists of two main parts:
+        1.  `"regions"`: A simple array that maps a region ID (the array index) to the region's full name (e.g., `"The Void"`).
+        2.  `"regionmap"`: A large array representing a 3D map of the galaxy. The data is compressed using **Run-Length Encoding (RLE)**. Each entry represents a "row" in the grid, with pairs of `[run_length, region_id]`. For example, `[1225, 0]` means "1225 grid cells belonging to region 0 (the void)".
+    *   **How to Use:** By loading this file and implementing a C++ function to read the RLE data and convert system coordinates to a grid index, our application can determine the galactic region for any system. This would allow us to add a `region_id` foreign key to our `systems` table, which is a powerful tool for filtering and analysis.

@@ -19,6 +19,7 @@ This table contains one entry for each star system.
 | `id`               | `BIGINT`      | **Yes**     | EDSM's internal ID for the system.                                 |
 | `id64`             | `BIGINT`      |             | 64-bit system address.                                             |
 | `name`             | `VARCHAR(255)`|             | Name of the system. Should be indexed.                             |
+| `mainStar_type`    | `VARCHAR(255)`|             | Type of the main star (e.g., "G-type star", "Black Hole"). |
 | `coord_x`          | `DOUBLE`      |             | X coordinate. (NULL for systems without precise coordinates)       |
 | `coord_y`          | `DOUBLE`      |             | Y coordinate. (NULL for systems without precise coordinates)       |
 | `coord_z`          | `DOUBLE`      |             | Z coordinate. (NULL for systems without precise coordinates)       |
