@@ -23,7 +23,20 @@ This means that for dynamic data like market prices or faction states, the major
 *   **Data Provided:** Detailed system and body information (names, types, properties), faction states, station services, and player flight logs. This is the best source for a "complete picture" of the galaxy.
 *   **Accessing the Data:**
     *   **Data Dumps:** EDSM provides full database dumps updated daily, including gzipped JSON files for systems, bodies, stations, etc.
-    *   **Download Procedure:** The data dumps are available at **https://www.edsm.net/dump**. Standard `wget` or `curl` commands can be used to download the desired files.
+    *   **Download Procedure:** The data dumps are available at **https://www.edsm.net/en/nightly-dumps**. Standard `wget` or `curl` commands can be used to download the desired files.
+
+    *   **Available Dumps Summary:** The following `.json.gz` files are available:
+        *   **Systems Data:**
+            *   `systemsWithCoordinates.json.gz`: The main file, containing all systems with known 3D coordinates.
+            *   `systemsWithoutCoordinates.json.gz`: Systems known to exist but whose coordinates have not yet been triangulated.
+            *   `systemsPopulated.json.gz`: A subset of systems that have a non-zero population.
+            *   `systemsWithCoordinates7days.json.gz`: A smaller file containing only systems added or updated in the last 7 days.
+        *   **Stations & Powerplay:**
+            *   `stations.json.gz`: A complete list of all stations, outposts, fleet carriers, and planetary ports.
+            *   `systemsPowerplay.json.gz`: Systems aligned with a PowerPlay figure, used for tracking political influence.
+        *   **Exploration Data:**
+            *   `bodies7days.json.gz`: Celestial bodies (planets, stars) that have been scanned and submitted in the last 7 days. A full dump of all bodies is not available, likely due to its extreme size.
+            *   `codex.json.gz`: A list of all unique codex entries discovered by players (e.g., specific lifeforms or geological features).
 
 ### Spansh's Guide
 
