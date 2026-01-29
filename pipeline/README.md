@@ -70,3 +70,29 @@ pipeline/etl/
     |   `-- expected_output.bin
     `-- test_processing.py
 ```
+
+---
+
+## Data Validation and Logging Strategy
+
+### Data Validation
+
+*   **Stage:** Validation occurs during the **Transform stage** in the `process_data.py` script.
+*   **Method:** As each system object is streamed from the source file, the script will perform fast, inline checks for the presence and correct type of our minimally required fields (`id64`, `name`, `coords`).
+*   **Error Handling:** Any record failing validation will be skipped and a warning will be logged. This ensures that malformed data in the source dump does not halt the entire pipeline.
+
+### Logging Strategy
+
+Logging is handled independently by each major component of the project.
+
+#### Python ETL Script
+
+*   **Library:** Python's built-in `logging` module.
+*   **Scope:** The script will log key events such as the start and end of the process, file download status, number of records processed, number of records skipped due to validation failures, and any critical errors.
+*   **Output:** Logs will be written to both the console (for interactive use) and a dedicated log file (e.g., `pipeline/etl/logs/etl_process.log`).
+
+#### C++ Routing Engine
+
+*   **Library:** A high-performance, dedicated C++ logging library such as **`spdlog`**. The C++ engine will **not** call out to Python for logging.
+*   **Scope:** The engine will log its own critical events, such as the R-tree build time, memory usage, and details of each routing query performed (start, end, time taken).
+*   **Output:** Logs will be written to the console and/or a dedicated engine log file.
