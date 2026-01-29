@@ -29,18 +29,7 @@ These diagrams show the high-level relationships between the main classes in eac
 ### Core Module
 ```mermaid
 classDiagram
-  class Coordinates {
-    +double x
-    +double y
-    +double z
-  }
-  class StarSystem {
-    +long long id64
-    +string name
-    +string mainStar_type
-    +Coordinates coords
-  }
-  StarSystem "1" -- "1" Coordinates : has
+  class A
 ```
 
 ### IO Module
@@ -49,10 +38,10 @@ classDiagram
   direction LR
   class DataLoader {
     <<interface>>
-    +loadSystems(string filePath) vector~StarSystem~
+    +loadSystems(string filePath) vector<StarSystem>
   }
   class JsonLoader {
-    +loadSystems(string filePath) vector~StarSystem~
+    +loadSystems(string filePath) vector<StarSystem>
   }
   class StarSystem {
     ...
@@ -67,12 +56,12 @@ classDiagram
   direction LR
   class SpatialIndex {
     <<interface>>
-    +build(vector~StarSystem~ systems) void
-    +findWithinRadius(Coordinates center, double radius) vector~long long~
+    +build(vector<StarSystem> systems) void
+    +findWithinRadius(Coordinates center, double radius) vector<long long>
   }
   class RTree {
-    +build(vector~StarSystem~ systems) void
-    +findWithinRadius(Coordinates center, double radius) vector~long long~
+    +build(vector<StarSystem> systems) void
+    +findWithinRadius(Coordinates center, double radius) vector<long long>
   }
    class StarSystem {
     ...
@@ -87,11 +76,11 @@ classDiagram
   direction LR
   class Router {
     <<interface>>
-    +findRoute(long long startId, long long endId) vector~long long~
+    +findRoute(long long startId, long long endId) vector<long long>
   }
   class AStarRouter {
     -SpatialIndex& spatialIndex
-    +findRoute(long long startId, long long endId) vector~long long~
+    +findRoute(long long startId, long long endId) vector<long long>
   }
   class SpatialIndex {
     <<interface>>
@@ -109,29 +98,29 @@ This flowchart shows the typical sequence of operations when the application run
 ```mermaid
 graph TD
     subgraph "Initialization Phase"
-        A[main() starts] --> B[Instantiate JsonLoader];
-        B --> C[loader.loadSystems(...)];
-        C --> D[vector&lt;StarSystem&gt;];
-        D --> E[Instantiate RTree as SpatialIndex];
-        E --> F[spatialIndex.build(systems)];
-        F --> G[Instantiate AStarRouter with SpatialIndex];
+        A["main() starts"] --> B["Instantiate JsonLoader"];
+        B --> C["loader.loadSystems(...)"];
+        C --> D["vector<StarSystem>"];
+        D --> E["Instantiate RTree as SpatialIndex"];
+        E --> F["spatialIndex.build(systems)"];
+        F --> G["Instantiate AStarRouter with SpatialIndex"];
     end
 
     subgraph "User Interaction"
-        H[Get Start/End System Names from User];
-        H --> I[Look up System IDs];
+        H["Get Start/End System Names from User"];
+        H --> I["Look up System IDs"];
     end
 
     subgraph "Routing Phase"
-        J[router.findRoute(startId, endId)];
-        J --> K{A* Search Loop};
-        K -- "Find neighbors" --> L[spatialIndex.findWithinRadius(...)];
+        J["router.findRoute(startId, endId)"];
+        J --> K{"A* Search Loop"};
+        K -- "Find neighbors" --> L["spatialIndex.findWithinRadius(...)"];
         L -- "Returns neighbors" --> K;
-        K -- "Route found" --> M[vector&lt;long long&gt; route];
+        K -- "Route found" --> M["vector<long long> route"];
     end
 
     subgraph "Output Phase"
-        N[Display Route to User];
+        N["Display Route to User"];
     end
 
     G --> H;
