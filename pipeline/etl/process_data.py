@@ -18,11 +18,12 @@ def download_data():
     """
     print(f"Checking for EDSM data dump at {EDSM_DUMP_PATH}...")
     if not os.path.exists(EDSM_DUMP_PATH):
-        print("File not found. Downloading...")
+        print("Local File not found. Downloading...")
         # NOTE: This downloads the entire file into memory before writing.
         # For very large files, a streaming download approach would be better.
         response = requests.get(EDSM_DUMP_URL, stream=True)
         response.raise_for_status()
+        
         with open(EDSM_DUMP_PATH, 'wb') as f:
             for chunk in response.iter_content(chunk_size=8192):
                 f.write(chunk)
