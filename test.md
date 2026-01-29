@@ -1,4 +1,0 @@
-```mermaid
-classDiagram
-  class A
-```

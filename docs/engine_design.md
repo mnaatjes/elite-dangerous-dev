@@ -29,7 +29,18 @@ These diagrams show the high-level relationships between the main classes in eac
 ### Core Module
 ```mermaid
 classDiagram
-  class A
+  class Coordinates {
+    +double x
+    +double y
+    +double z
+  }
+  class StarSystem {
+    +long long id64
+    +string name
+    +string mainStar_type
+    +Coordinates coords
+  }
+  StarSystem "1" -- "1" Coordinates : has
 ```
 
 ### IO Module
