@@ -23,92 +23,64 @@ This means that for dynamic data like market prices or faction states, the major
 *   **Data Provided:** Detailed system and body information (names, types, properties), faction states, station services, and player flight logs. This is the best source for a "complete picture" of the galaxy.
 *   **Accessing the Data:**
     *   **Data Dumps:** EDSM provides full database dumps updated daily, including gzipped JSON files for systems, bodies, stations, etc.
-    *   **Download Procedure:** The data dumps are available at **https://www.edsm.net/en/nightly-dumps**. Standard `wget` or `curl` commands can be used to download the desired files.
+    *   **Download Procedure:** The data dumps are available at **https://www.edsm.net/en/nightly-dumps**.
 
-    *   **Available Dumps Summary:** The following `.json.gz` files are available:
-        *   **Systems Data:**
-            *   `systemsWithCoordinates.json.gz`: The main file, containing all systems with known 3D coordinates.
-            *   `systemsWithoutCoordinates.json.gz`: Systems known to exist but whose coordinates have not yet been triangulated.
-            *   `systemsPopulated.json.gz`: A subset of systems that have a non-zero population.
-            *   `systemsWithCoordinates7days.json.gz`: A smaller file containing only systems added or updated in the last 7 days.
-        *   **Stations & Powerplay:**
-            *   `stations.json.gz`: A complete list of all stations, outposts, fleet carriers, and planetary ports.
-            *   `systemsPowerplay.json.gz`: Systems aligned with a PowerPlay figure, used for tracking political influence.
-        *   **Exploration Data:**
-            *   `bodies7days.json.gz`: Celestial bodies (planets, stars) that have been scanned and submitted in the last 7 days. A full dump of all bodies is not available, likely due to its extreme size.
-            *   `codex.json.gz`: A list of all unique codex entries discovered by players (e.g., specific lifeforms or geological features).
+### Spansh's Guide - [https://spansh.co.uk/dumps](https://spansh.co.uk/dumps)
 
-### Spansh's Guide
-
-*   **What is it?** A highly specialized set of tools, most famous for its powerful route planners (e.g., Neutron Router, Road to Riches).
+*   **What is it?** A highly specialized set of tools, most famous for its powerful route planners.
 *   **Primary Data Source:** Likely a combination of EDSM data dumps, its own processing of EDDN, and user submissions.
-*   **Data Provided:** While the tools are the main feature, Spansh also provides its own data dumps, often pre-filtered for specific use cases (e.g., just neutron stars, just populated systems). These are convenient for specialized applications.
-*   **Accessing the Data:**
-    *   **Download Procedure:** Data dumps are available as `.json.gz` files from the "Dumps" page at **https://spansh.co.uk/dumps**.
-    *   **Analyzed Dumps:**
-        *   `systems_neutron.json.gz`: Contains only systems with a neutron star, black hole, or white dwarf. Confirms `id64`, `name`, `coords`, and `mainStar` attributes.
-        *   `systems_1month.json.gz`: Contains all system types updated in the last month. Also confirms the same attribute structure.
-
----
-
-## Other Services & Tools
-
-### Inara - [https://inara.cz/elite/inara-api/](https://inara.cz/elite/inara-api/)
-
-*   **What is it?** A comprehensive player companion website and encyclopedia. Its focus is on player-centric information: tracking personal progress, finding engineers, managing materials, and viewing community goals.
-*   **Accessing the Data:** Inara has a public API for targeted queries but is not a source for bulk galaxy data dumps.
-
-### EDAstro (Elite Dangerous Astrometrics) - [https://edastro.com/mapcharts/](https://edastro.com/mapcharts/)
-
-*   **What is it?** A website for data visualization, offering maps and charts of the galaxy.
-*   **Primary Data Source:** It is a data consumer, using data from EDSM and EDDN.
-*   **Accessing the Data:** EDAstro provides a public API for targeted queries. It is not a source for bulk data dumps.
-    *   **API Focus:** The API is primarily for retrieving information about individual star systems or points of interest from the Galactic Exploration Catalog (GEC).
-    *   **Use Case:** Best suited for applications that need to look up specific items rather than download the entire dataset.
-    *   **Restrictions:** The API is rate-limited (e.g., 100 requests per 15 minutes), reinforcing its use for targeted, non-bulk queries.
+*   **Data Provided:** Spansh provides its own data dumps, often pre-filtered for specific use cases (e.g., just neutron stars, just populated systems), which are convenient for specialized applications.
 
 ### EDAstro Map Chart Files - [https://edastro.com/mapcharts/files.html](https://edastro.com/mapcharts/files.html)
 
-*   **What is it?** A collection of specialized datasets derived from EDSM and EDDN data, presented as downloadable files. Unlike the EDAstro API which is for targeted lookups, this is a source for bulk data, albeit in a curated, pre-processed form.
-*   **Data Provided:** A wide variety of specific datasets, such as lists of all Earth-like worlds, systems with high body counts, ringed stars, etc. The data is available as CSV files, with some larger datasets also available as ZIP archives. There are also 7-day rolling JSONL dumps for star systems, stars, and planets.
-*   **Update Frequency:** Most files are updated daily. Some specific files are updated weekly or twice-monthly. The 7-day JSON dumps are updated every other day.
-*   **Use Case:** This is an excellent source for pre-filtered, specialized datasets. Instead of downloading the entire EDSM database and filtering it ourselves, we can use these files for specific analysis tasks or to populate certain tables. For example, the `systems_earthlike.csv` could be used to quickly identify all Earth-like worlds without processing the entire EDSM body dump.
-*   **Schema Analysis (`systems7day.jsonl`):**
-    *   A sample from the 7-day systems JSON Lines file was analyzed. The schema is highly compatible with other sources.
-    *   **Core Keys (Consistent with EDSM/Spansh):**
-        *   `id64` (integer): The unique 64-bit system ID.
-        *   `name` (string): The system name.
-        *   `coords` (object): A nested object with `x`, `y`, `z` floating point coordinates.
-    *   **Additional Useful Keys:**
-        *   `edsm_id` (integer): The corresponding ID in the EDSM database, useful for cross-referencing.
-        *   `sol_dist` (float): Pre-calculated distance from Sol.
-        *   `mainStarType` (string): The description of the main star (e.g., "F (White) Star").
-        *   `bodyCount` (string): The number of bodies in the system.
-    *   **Conclusion:** The EDAstro file dumps are a valuable, pre-processed data source. They contain the essential keys for integration (`id64`, `name`, `coords`) and provide useful, pre-calculated metadata that can simplify the ETL process. Some care must be taken with inconsistent data types (e.g., numbers represented as strings).
-
-### EDDiscovery
-
-*   **What is it?** A powerful client application that players run. It reads the game journal, provides many in-app tools for explorers, and is a major contributor of data to services like EDSM and EDDN. It is a **source of data**, not a dataset provider.
-
-### ICARUS Terminal
-
-*   **What is it?** A "second-screen" companion app that displays information from other services like EDSM and Inara in a touch-friendly interface. It is a **data consumer**, not a provider.
-
-### Elite Dangerous Market Connector (EDMC)
-
-*   **What is it?** A lightweight client application that players run. Its primary purpose is to read the game journal and upload market and exploration data to the EDDN. It is a **source of data**, not a dataset provider.
+*   **What is it?** A collection of specialized datasets derived from EDSM and EDDN data, presented as downloadable files.
+*   **Data Provided:** A wide variety of specific datasets, such as lists of all Earth-like worlds, systems with high body counts, etc., available as CSV or JSONL files.
+*   **Use Case:** Excellent for pre-filtered, specialized datasets, which can save us from having to process the entire EDSM database for certain tasks.
+*   **Schema Analysis (`systems7day.jsonl`):** The schema is highly compatible with other sources, containing the critical `id64`, `name`, and `coords` fields, along with useful pre-calculated data like `sol_dist`.
 
 ---
 
-## Community Projects & Code
+## API & Service Providers
 
-### klightspeed/EliteDangerousRegionMap
+This section covers services that provide data via a query-based API rather than bulk dumps.
 
-*   **URL:** [https://github.com/klightspeed/EliteDangerousRegionMap](https://github.com/klightspeed/EliteDangerousRegionMap)
-*   **What is it?** A repository containing code and data to determine which of the 42 galactic regions a star system belongs to. It provides working implementations in Python, C#, JavaScript, and Rust.
-*   **Usefulness:** This is a key resource for understanding the galactic grid. The C# and Rust implementations are clear references for porting the coordinate-to-region logic to C++.
-*   **Data File:** `RegionMapData.json`
-    *   **Analysis:** This file contains the pre-computed data necessary for the region-finding algorithm to work. It consists of two main parts:
-        1.  `"regions"`: A simple array that maps a region ID (the array index) to the region's full name (e.g., `"The Void"`).
-        2.  `"regionmap"`: A large array representing a 3D map of the galaxy. The data is compressed using **Run-Length Encoding (RLE)**. Each entry represents a "row" in the grid, with pairs of `[run_length, region_id]`. For example, `[1225, 0]` means "1225 grid cells belonging to region 0 (the void)".
-    *   **How to Use:** By loading this file and implementing a C++ function to read the RLE data and convert system coordinates to a grid index, our application can determine the galactic region for any system. This would allow us to add a `region_id` foreign key to our `systems` table, which is a powerful tool for filtering and analysis.
+### Inara - [https://inara.cz/elite/inara-api/](https://inara.cz/elite/inara-api/)
+
+*   **What is it?** A comprehensive player companion website and encyclopedia.
+*   **Accessing the Data:** Inara has a public API for targeted queries (e.g., looking up a specific commodity or engineer). It is not a source for bulk galaxy data.
+
+### EDAstro API - [https://edastro.com/api-details.html](https://edastro.com/api-details.html)
+
+*   **What is it?** An API for targeted lookups of star systems or Points of Interest from the Galactic Exploration Catalog (GEC).
+*   **Accessing the Data:** The API is rate-limited and best suited for applications that need to look up specific items rather than download an entire dataset.
+
+---
+
+## Community Standards & Development Resources
+
+This section covers community projects that, while not direct data sources, provide critical standards, code, or logic for interpreting galactic data.
+
+### EDDN (Elite Dangerous Data Network) - [https://github.com/EDCD/EDDN/](https://github.com/EDCD/EDDN/)
+
+*   **What is it?** EDDN is the real-time data "firehose" for the Elite Dangerous community. It relays live game events from players to subscribers but does not store or archive data itself.
+*   **Usefulness for our Project:** Its primary value is the **`schemas/` directory (on the `live` branch)**. These JSON Schemas are the definitive, community-enforced standard for all shared data. Aligning with these schemas ensures our database is compatible with the wider ecosystem.
+*   **Schema Analysis (Data Consistency):** The schemas enforce strict consistency for core system data. Any event related to a system **must** provide:
+    *   `"StarSystem"` (string): The system's name.
+    *   `"SystemAddress"` (integer): The unique 64-bit ID for the system (equivalent to `id64`).
+    *   `"StarPos"` (array): An array of three floats `[x, y, z]` for the system's coordinates.
+*   **Conclusion:** The EDDN schemas are the source of truth for data structure and consistency in the community.
+
+### klightspeed/EliteDangerousRegionMap - [https://github.com/klightspeed/EliteDangerousRegionMap](https://github.com/klightspeed/EliteDangerousRegionMap)
+
+*   **What is it?** A repository containing code and data to determine which of the 42 galactic regions a star system belongs to.
+*   **Usefulness:** This is a key resource for porting the coordinate-to-region logic to our C++ application, allowing us to categorize systems by region.
+
+---
+
+## Data Source Clients
+
+These are applications that players run to generate and submit the data that feeds the entire ecosystem. They are sources of data, but not dataset providers.
+
+*   **EDDiscovery:** A powerful client application that reads the game journal and contributes to EDSM and EDDN.
+*   **Elite Dangerous Market Connector (EDMC):** A lightweight client whose primary purpose is to upload market and exploration data to EDDN.
+*   **ICARUS Terminal:** A "second-screen" companion app that primarily consumes data from other services.

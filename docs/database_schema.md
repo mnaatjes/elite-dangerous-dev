@@ -17,7 +17,7 @@ This table contains one entry for each star system.
 | Column Name        | Data Type     | Primary Key | Notes                                                              |
 |--------------------|---------------|-------------|--------------------------------------------------------------------|
 | `id`               | `BIGINT`      | **Yes**     | EDSM's internal ID for the system.                                 |
-| `id64`             | `BIGINT`      |             | 64-bit system address.                                             |
+| `id64`             | `BIGINT`      |             | The canonical 64-bit system address, as defined by the EDDN `SystemAddress` standard. This is the primary key for cross-referencing with all community tools. |
 | `name`             | `VARCHAR(255)`|             | Name of the system. Should be indexed.                             |
 | `mainStar_type`    | `VARCHAR(255)`|             | Type of the main star (e.g., "G-type star", "Black Hole"). |
 | `coord_x`          | `DOUBLE`      |             | X coordinate. (NULL for systems without precise coordinates)       |
@@ -31,6 +31,16 @@ This table contains one entry for each star system.
 | `...`              | `...`         |             | *(More attributes to be added as they are identified)*             |
 
 *(A spatial index would be created on the `coord_x, coord_y, coord_z` columns.)*
+
+> **Design Note: Adherence to Community Standards**
+>
+> The structure of this table, specifically the inclusion of `id64`, `name`, and the `coord_*` fields, is based on the community-wide data standards enforced by the **Elite Dangerous Data Network (EDDN)**.
+>
+> *   `id64` corresponds to the mandatory `SystemAddress` in EDDN schemas.
+> *   `name` corresponds to `StarSystem`.
+> *   `coord_x, coord_y, coord_z` correspond to `StarPos`.
+>
+> By treating these fields as the canonical source of truth for system identification, we ensure that our database is robust, unambiguous, and compatible with the entire ecosystem of Elite Dangerous third-party tools and data sources.
 
 ### 1.2. `stations` Table
 
