@@ -118,22 +118,22 @@ classDiagram
 This diagram shows the relationship between the major components of the V1 pipeline.
 
 ```mermaid
-componentDiagram
-    cloud "EDSM Server" as EDSM
-    package "Python ETL" {
-        component "process_data.py" as Script
-        folder "Output" as Output {
-            database "systems_processed.bin" as BinFile
-            artifact "checksum.sha256" as Checksum
-        }
-    }
-    package "C++ Engine" {
-        component "Routing Engine" as Engine
-    }
+graph TD
+    subgraph "External Source"
+        A["cloud: EDSM Server"];
+    end
+    subgraph "Python ETL Pipeline"
+        B["component: process_data.py"];
+        C["database: systems_processed.bin"];
+        D["artifact: checksum.sha256"];
+    end
+    subgraph "C++ Routing Engine"
+        E["component: Routing Engine"];
+    end
 
-    EDSM --> Script : downloads json.gz
-    Script --> BinFile : writes
-    Script --> Checksum : writes
-    BinFile --> Engine : reads
-    Checksum --> Engine : reads
+    A -- "downloads json.gz" --> B;
+    B -- "writes" --> C;
+    B -- "writes" --> D;
+    C -- "is read by" --> E;
+    D -- "is read by" --> E;
 ```
