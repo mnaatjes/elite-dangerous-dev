@@ -14,16 +14,20 @@ This is a living document and will be updated as more data sources are audited.
 
 This table contains one entry for each star system.
 
-| Column Name   | Data Type     | Primary Key | Notes                                             |
-|---------------|---------------|-------------|---------------------------------------------------|
-| `id`          | `BIGINT`      | **Yes**     | EDSM's internal ID for the system.                |
-| `id64`        | `BIGINT`      |             | 64-bit system address.                            |
-| `name`        | `VARCHAR(255)`|             | Name of the system. Should be indexed.            |
-| `coord_x`     | `DOUBLE`      |             | X coordinate.                                     |
-| `coord_y`     | `DOUBLE`      |             | Y coordinate.                                     |
-| `coord_z`     | `DOUBLE`      |             | Z coordinate.                                     |
-| `date`        | `DATETIME`    |             | Last update time in EDSM.                         |
-| `...`         | `...`         |             | *(More attributes to be added as they are identified)* |
+| Column Name        | Data Type     | Primary Key | Notes                                                              |
+|--------------------|---------------|-------------|--------------------------------------------------------------------|
+| `id`               | `BIGINT`      | **Yes**     | EDSM's internal ID for the system.                                 |
+| `id64`             | `BIGINT`      |             | 64-bit system address.                                             |
+| `name`             | `VARCHAR(255)`|             | Name of the system. Should be indexed.                             |
+| `coord_x`          | `DOUBLE`      |             | X coordinate. (NULL for systems without precise coordinates)       |
+| `coord_y`          | `DOUBLE`      |             | Y coordinate. (NULL for systems without precise coordinates)       |
+| `coord_z`          | `DOUBLE`      |             | Z coordinate. (NULL for systems without precise coordinates)       |
+| `estimated_coord_x`| `DOUBLE`      |             | Estimated X coordinate. (NULL for systems with precise coordinates)|
+| `estimated_coord_y`| `DOUBLE`      |             | Estimated Y coordinate. (NULL for systems with precise coordinates)|
+| `estimated_coord_z`| `DOUBLE`      |             | Estimated Z coordinate. (NULL for systems with precise coordinates)|
+| `coord_precision`  | `INT`         |             | Precision of estimated coordinates. (NULL for precise coordinates) |
+| `date`             | `DATETIME`    |             | Last update time in EDSM.                                          |
+| `...`              | `...`         |             | *(More attributes to be added as they are identified)*             |
 
 *(A spatial index would be created on the `coord_x, coord_y, coord_z` columns.)*
 
