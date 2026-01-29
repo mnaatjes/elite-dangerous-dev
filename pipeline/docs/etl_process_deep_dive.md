@@ -61,3 +61,31 @@ A structured logging approach is used to provide insight into the pipeline's exe
     *   **WARNING:** Details for each record that fails validation.
     *   **ERROR:** Any unhandled exceptions or critical failures (e.g., file not found, network error).
     *   **DEBUG:** More verbose information, such as progress updates every N records.
+
+---
+
+## 4. Data Integrity and Corruption Safeguards
+
+To prevent corruption of `id64` and coordinate values, safeguards are implemented at multiple stages of the pipeline.
+
+### Stage 1: Download
+
+*   **Problem:** The source `json.gz` file could be corrupted during network transfer.
+*   **Safeguard:** The successful decompression by Python's `gzip` library serves as a basic integrity check on the compressed file. More advanced checks, like comparing against a source-provided checksum (e.g., SHA256), will be implemented if the data source provides them.
+
+### Stage 2: Transformation (Parsing & Validation)
+
+*   **Problem:** The source JSON may contain malformed records.
+*   **Safeguard:** In addition to the presence and type checks in the main validation strategy, we will implement **range checks** on coordinates (e.g., ensuring `x, y, z` are within known galactic bounds) to catch garbage values.
+
+### Stage 3: Binary Packing
+
+*   **Problem:** Logical errors in the `struct.pack` implementation could corrupt data.
+*   **Safeguard:** **Unit testing** is the primary guard here. Our test suite will compare the binary output of a sample dataset against a pre-calculated, byte-perfect `expected_output.bin` file, guaranteeing the packing logic is correct.
+
+### Stage 4: End-to-End Integrity
+
+*   **Problem:** The final `.bin` file could be corrupted after it's created, or there could be a subtle issue missed by other checks.
+*   **Safeguard:** We will implement an **end-to-end checksum verification**:
+    1.  After `process_data.py` successfully creates the `systems_processed.bin` file, it will compute a SHA256 hash of the file and save it to `systems_processed.bin.sha256`.
+    2.  When the C++ routing engine starts, it will first read the expected hash from the `.sha256` file. It will then compute the hash of the `.bin` file it's about to load. If the hashes do not match, the engine will refuse to load the data and exit with an error, preventing it from ever running with corrupted data.
