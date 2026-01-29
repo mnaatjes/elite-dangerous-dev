@@ -25,35 +25,35 @@ To download and decompress the required data, follow these steps:
 
 ## Project Directory Structure
 
-This project is organized by functionality, separating the high-performance C++ engine from the data pipeline and user-facing application, which can be written in higher-level languages like Python.
+This project is organized by functionality, separating the high-performance C++ engine from the data pipeline and user-facing application.
 
 ```
 /
-|-- app/              # The user-facing application (e.g., Python CLI)
-|   |-- main.py
-|   `-- requirements.txt
+|-- app/              # User-facing application
 |
-|-- engine/           # The C++ high-performance routing engine
+|-- engine/           # High-performance C++ routing engine
 |   |-- include/
-|   |   `-- elite_router/
 |   |-- src/
-|   |-- tests/
-|   `-- CMakeLists.txt
+|   `-- tests/
 |
-|-- pipeline/         # Python scripts for the data pipeline (ETL)
-|   |-- scripts/
-|   |-- tests/
-|   `-- requirements.txt
+|-- pipeline/         # Scripts for the data pipeline (ETL)
+|   |-- etl/
+|   |   |-- process_data.py   # Main Python script for data processing
+|   |   |-- requirements.txt  # Python dependencies
+|   |   |-- SETUP.md          # Guide for setting up the Python environment
+|   |   `-- output/           # Default location for generated data files
+|   `-- README.md
 |
-|-- data/             # Raw, unprocessed data (as before)
-|-- docs/             # Documentation (as before)
+|-- data/             # Raw, unprocessed data
+|-- docs/             # Project documentation
+|-- third_party/      # Third-party source code and libraries
 |-- .gitignore
 `-- README.md
 ```
 
 ### Rationale and Division of Responsibilities
 
-*   **`engine/`**: Contains the self-contained, high-performance C++ routing engine. This includes all C++ source (`src/`), public headers (`include/`), and tests. It can be built and tested independently of the other components.
-*   **`pipeline/`**: Contains all Python scripts and resources related to the V2.1 data pipeline. This includes scripts for downloading, parsing, cleaning, and loading data into a database.
-*   **`app/`**: Contains the main user-facing application. This can be a simple Python script that imports and calls the C++ `engine` as a library to perform routing calculations, while handling all user interaction itself.
+*   **`engine/`**: Contains the self-contained, high-performance C++ routing engine. It can be built and tested independently.
+*   **`pipeline/`**: Contains all Python scripts and resources related to the data pipeline. Its primary role is to download, parse, and transform raw data into an optimized format for the C++ `engine`.
+*   **`app/`**: Contains the main user-facing application, which will use the `engine` to perform its core logic.
 *   **Separation of Concerns:** This component-based architecture creates a clear separation of responsibilities, allowing for independent development and testing of each part of the project.

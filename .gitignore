@@ -3,3 +3,7 @@ data/
 galaxy-spatial/
 sandbox/
 third_party/
+
+# Python ETL Pipeline
+pipeline/etl/venv/
+pipeline/etl/output/
