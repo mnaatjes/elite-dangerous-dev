@@ -42,23 +42,23 @@ This involves compiling the Rust/C# code into a native shared library (`.dll` or
 
 ## 2. Proposed Hybrid Language Architecture
 
-We can structure the project to play to the strengths of multiple languages, separating the high-performance "Engine" from the higher-level "Shell" and "Tools".
+We will structure the project by functionality, creating clear boundaries between components built with different languages. This plays to the strengths of both C++ and higher-level scripting languages.
 
-### The "Engine" (Must Be C++)
+### The `engine/` Directory (Must Be C++)
 
-The parts of the application where performance is paramount should be built as a C++ library. This is the primary goal of our V1.0 roadmap. This includes:
+This directory will contain the self-contained, high-performance C++ library. This is the primary goal of our V1.0 roadmap and includes:
 
-1.  **The Spatial Index (R-tree):** Building, loading, and querying the index with millions of points needs to be as fast as possible.
-2.  **The Routing Algorithm (A*):** The inner loop of the pathfinder will execute millions of times for a long route and must be extremely fast.
-3.  **Core Data Structures:** The fundamental classes (`StarSystem`, `Coordinates`) that the above components use.
-4.  **`id64` and Region Logic:** The ported C++ version of these algorithms would live inside this engine.
+1.  **The Spatial Index (R-tree):** Building, loading, and querying the index with millions of points.
+2.  **The Routing Algorithm (A*):** The inner loop of the pathfinder, which must be extremely fast.
+3.  **Core Data Structures:** The fundamental classes (`StarSystem`, `Coordinates`) used by the engine.
+4.  **`id64` and Region Logic:** The ported C++ version of community-reverse-engineered algorithms will live inside this engine.
 
-### The "Shell" and "Tools" (Can Be Python/JS/PHP)
+### The `pipeline/` and `app/` Directories (Can Be Python/JS/PHP)
 
-Many other parts of the project do not have the same extreme performance requirements and are excellent candidates for languages you are more familiar with.
+Other parts of the project do not have the same extreme performance requirements and are excellent candidates for languages you are more familiar with.
 
-1.  **The User Interface:** The main application the user interacts with can be a Python or JavaScript script. It would handle user input (e.g., "plot route from A to B"), call our C++ "Engine" to do the actual calculation, and then format and display the result.
-2.  **The Data Pipeline (for V2.1):** The separate process that downloads data dumps, decompresses them, parses them, and inserts them into a database is a perfect task for **Python**. Its extensive libraries for data handling and web requests are ideal for this.
-3.  **API Interaction:** Querying live APIs from services like EDSM or Inara is significantly easier and faster to develop in Python or JavaScript than in C++.
+1.  **`app/` (The User Interface):** The main application the user interacts with. This can be a Python or JavaScript script that handles user input (e.g., "plot route from A to B") and then calls the C++ `engine` as a library to perform the calculation.
+2.  **`pipeline/` (The Data Pipeline):** The entire V2.1 process for downloading, decompressing, parsing, and loading data into a database is a perfect task for **Python**. Its extensive libraries for data handling and web requests are ideal for this.
+3.  **API Interaction:** Querying live APIs from services like EDSM or Inara from within the `pipeline` or `app` is significantly easier in Python or JavaScript than in C++.
 
-This hybrid architecture provides the best of both worlds: maximum performance where it counts, and the flexibility and development speed of familiar languages for the less performance-critical parts of the project.
+This component-based architecture provides the best of both worlds: maximum performance where it counts, and the flexibility and development speed of familiar languages for the project's other parts.

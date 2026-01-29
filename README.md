@@ -23,60 +23,37 @@ To download and decompress the required data, follow these steps:
     gunzip -k data/spansh/dumps/systems_neutron.json.gz
     ```
 
-## Proposed Project Directory Structure
+## Project Directory Structure
+
+This project is organized by functionality, separating the high-performance C++ engine from the data pipeline and user-facing application, which can be written in higher-level languages like Python.
 
 ```
 /
-|-- bin/              # Compiled binaries and executables
-|-- build/            # Build-related files (for out-of-source builds)
-|-- data/             # Raw data files (e.g., from Spansh)
-|   `-- spansh/
-|-- docs/             # Project documentation
-|-- include/          # Public headers for libraries and executables
-|   `-- elite_dangerous/
-|       |-- core/       # Core data structures (e.g., StarSystem, Coordinates)
-|       |-- io/         # Data loading and parsing (e.g., JsonLoader)
-|       |-- routing/    # Pathfinding logic (e.g., Router)
-|       `-- spatial/    # Spatial indexing (e.g., R-tree wrapper)
-|-- lib/              # Compiled static or dynamic libraries (.a, .so)
-|-- src/              # Source code implementation (.cpp files)
-|   |-- app/            # Main application source (e.g., a CLI tool)
-|   |   `-- main.cpp
-|   |-- core/           # Implementation of core data structures
-|   |-- io/             # Implementation of I/O logic
-|   |-- routing/        # Implementation of pathfinding algorithms
-|   `-- spatial/        # Implementation of the spatial index
-|-- tests/            # Unit and integration tests
-|   |-- core/
-|   |-- io/
-|   |-- routing/
-|   `-- spatial/
-|-- third_party/      # External libraries (e.g., JSON parsers, spatial libs)
+|-- app/              # The user-facing application (e.g., Python CLI)
+|   |-- main.py
+|   `-- requirements.txt
+|
+|-- engine/           # The C++ high-performance routing engine
+|   |-- include/
+|   |   `-- elite_router/
+|   |-- src/
+|   |-- tests/
+|   `-- CMakeLists.txt
+|
+|-- pipeline/         # Python scripts for the data pipeline (ETL)
+|   |-- scripts/
+|   |-- tests/
+|   `-- requirements.txt
+|
+|-- data/             # Raw, unprocessed data (as before)
+|-- docs/             # Documentation (as before)
 |-- .gitignore
-|-- CMakeLists.txt      # Root CMake build script
 `-- README.md
 ```
 
 ### Rationale and Division of Responsibilities
 
-This structure is designed to be modular and addresses the key points from your requirements document:
-
-*   **Separation of Concerns:** The core logic is decoupled from the main application. Each directory under `src/` and `include/` represents a distinct module with a single responsibility.
-    *   **`src/io`**: Handles **Input Data Handling**. Its job is to read and parse the JSON data, dealing with compression and memory-efficient streaming.
-    *   **`src/spatial`**: Manages **Data Querying**. This module will contain the R-tree or other spatial index, providing a clean API to query for star systems.
-    *   **`src/routing`**: Implements the **Routing and Pathfinding** logic. It will use the `spatial` module to find nearby nodes and calculate routes.
-    *   **`src/core`**: Contains the fundamental data types (like a `StarSystem` class) used by all other modules.
-    *   **`src/app`**: This is the user-facing part of the application. It orchestrates the other modules to perform a task (e.g., takes start/end points from the user and uses the `routing` module to print a route).
-
-*   **Public vs. Private Code:**
-    *   **`include/`** contains the "public" headers. These define the interfaces for your modules. Other modules should only interact via these headers.
-    *   **`src/`** contains the "private" implementation details. If you change the code in a `.cpp` file here, as long as the corresponding header in `include/` doesn't change, other modules won't be affected.
-
-*   **Extensibility:** This design is highly extensible. If you need new functionality, you can add a new module (e.g., `src/analytics`, `include/elite_dangerous/analytics`) without breaking existing code. This directly addresses requirement #4.
-
-*   **Build & Dependency Management:**
-    *   **`build/`**: Using an "out-of-source" build directory keeps your main project folder clean from build artifacts.
-    *   **`third_party/`**: Provides a standard location for any external libraries you might vendor into the project, like a specific JSON parser or a pre-compiled library.
-    *   **`CMakeLists.txt`**: This is the standard for building modern C++ projects. It will define how to build each module into a library and then link them together to create the final executable in `bin/`.
-
-This structure provides a solid foundation for building a complex application, making it easier to develop, test, and maintain over time.
+*   **`engine/`**: Contains the self-contained, high-performance C++ routing engine. This includes all C++ source (`src/`), public headers (`include/`), and tests. It can be built and tested independently of the other components.
+*   **`pipeline/`**: Contains all Python scripts and resources related to the V2.1 data pipeline. This includes scripts for downloading, parsing, cleaning, and loading data into a database.
+*   **`app/`**: Contains the main user-facing application. This can be a simple Python script that imports and calls the C++ `engine` as a library to perform routing calculations, while handling all user interaction itself.
+*   **Separation of Concerns:** This component-based architecture creates a clear separation of responsibilities, allowing for independent development and testing of each part of the project.
