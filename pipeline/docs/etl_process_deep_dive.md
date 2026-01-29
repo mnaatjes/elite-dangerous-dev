@@ -89,3 +89,51 @@ To prevent corruption of `id64` and coordinate values, safeguards are implemente
 *   **Safeguard:** We will implement an **end-to-end checksum verification**:
     1.  After `process_data.py` successfully creates the `systems_processed.bin` file, it will compute a SHA256 hash of the file and save it to `systems_processed.bin.sha256`.
     2.  When the C++ routing engine starts, it will first read the expected hash from the `.sha256` file. It will then compute the hash of the `.bin` file it's about to load. If the hashes do not match, the engine will refuse to load the data and exit with an error, preventing it from ever running with corrupted data.
+
+---
+
+## 5. ETL Script Design and Diagrams
+
+To better structure the Python script and visualize the overall process, we can use the following designs.
+
+### Proposed Class Structure
+
+While the initial script can be procedural, a more robust and testable implementation would be to encapsulate the logic in a class.
+
+```mermaid
+classDiagram
+    class ETLProcessor {
+        -edsm_url: string
+        -output_dir: string
+        +run() void
+        -_download_data() void
+        -_validate_record(record: dict) bool
+        -_process_records() void
+        -_generate_checksum() void
+    }
+```
+
+### High-Level Component Interaction
+
+This diagram shows the relationship between the major components of the V1 pipeline.
+
+```mermaid
+componentDiagram
+    cloud "EDSM Server" as EDSM
+    package "Python ETL" {
+        component "process_data.py" as Script
+        folder "Output" as Output {
+            database "systems_processed.bin" as BinFile
+            artifact "checksum.sha256" as Checksum
+        }
+    }
+    package "C++ Engine" {
+        component "Routing Engine" as Engine
+    }
+
+    EDSM --> Script : downloads json.gz
+    Script --> BinFile : writes
+    Script --> Checksum : writes
+    BinFile --> Engine : reads
+    Checksum --> Engine : reads
+```
