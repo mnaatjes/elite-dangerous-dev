@@ -1,35 +1,39 @@
-# Function to Generaate a test request object for ETL testing
+# Function to Generate a test request object for ETL testing
 import requests
 
-def make_http_request(url, method="GET", headers={}, stream=False):
-        """
-        Makes an HTTP Request.
-        """
+def http_request(url, method='GET', headers={}, timeout=30):
 
-        # Prepare default headers
-        default_headers = {
-            "User-Agent": "ETL-Client/1.0",
-            "Accept": "*/*",
-            "Content-Type": "application/json"
-        }
+    # GET HTTP Request
+    try:
+        # Match method to Request
+        match method.upper():
+            # GET
+            case 'GET':
+                # Get Response
+                res = requests.get(url, headers=headers, timeout=timeout)
 
-        # Merge default headers with provided headers
-        headers = {**default_headers, **headers}
+            # Default Unsupported Case
+            case _:
+                raise Exception("Unsupported HTTP Method!")
+    
+        # Check for response obj
+        if res:
+            # Raise for excptions
+            res.raise_for_status()
+            # Return Response
+            return res
 
-        #Prepare Request headers
-        req = requests.Request(
-            method=method,
-            url=url,
-            headers=headers
-        )
-        prepared_req = req.prepare()
+    # Errors and Exceptions
+    except requests.exceptions.HTTPError as err_http:
+        return f"Error - HTTP: {err_http}"
+    except requests.exceptions.ConnectionError as err_conn:
+        print(f"Error - Connection: {err_conn}")
+    except requests.exceptions.Timeout as err_time:
+        print(f"Error - Timeout: {err_time}")
+    except requests.exceptions.RequestException as err_req:
+        print(f"Error - Unexpected Request: {err_req}")
+    # Return Default Value
+    return None
 
-        #Send Request
-        try:
-            response = requests.get(prepared_req.url, headers=prepared_req.headers, stream=stream)
-            response.raise_for_status()  # Raise an error for bad responses
-            return response
-        
-        except requests.RequestException as e:
-            print(f"An error occurred: {e}")
-            return None
+def http_request_stream(url, method='GET', headers={}, stream=False, timeout=30):
+    return None

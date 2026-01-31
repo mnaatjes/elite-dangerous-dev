@@ -1,0 +1,32 @@
+[
+  {
+    "name": "Successful Google Search",
+    "url": "https://www.google.com",
+    "expected_status": 200
+  },
+  {
+    "name": "Valid Wikipedia Page",
+    "url": "https://en.wikipedia.org/wiki/Python_(programming_language)",
+    "expected_status": 200
+  },
+  {
+    "name": "Non-Existent Page (404)",
+    "url": "https://github.com/this-page-does-not-exist-12345",
+    "expected_status": 404
+  },
+  {
+    "name": "Invalid Protocol (Malformed)",
+    "url": "htt://wrong-scheme.com",
+    "expected_status": null
+  },
+  {
+    "name": "Incomplete URL",
+    "url": "https://",
+    "expected_status": null
+  },
+  {
+    "name": "Localhost Refused",
+    "url": "http://127.0.0.1:9999",
+    "expected_status": null
+  }
+]
