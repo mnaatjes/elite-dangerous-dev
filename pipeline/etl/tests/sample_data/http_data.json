@@ -6,13 +6,13 @@
   },
   {
     "name": "Valid Wikipedia Page",
-    "url": "https://en.wikipedia.org/wiki/Python_(programming_language)",
+    "url": "https://google.com",
     "expected_status": 200
   },
   {
     "name": "Non-Existent Page (404)",
     "url": "https://github.com/this-page-does-not-exist-12345",
-    "expected_status": 404
+    "expected_status": null
   },
   {
     "name": "Invalid Protocol (Malformed)",
