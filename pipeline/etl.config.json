@@ -1,0 +1,20 @@
+{
+    "name": "etl-pipeline/1.0",
+    "download_dir": "",
+    "output_dir": "",
+    "endpoints": [
+        {
+            "source_id": "EDSM",
+            "url": "https://www.edsm.com"
+        },
+        {
+            "source_id": "Spansh",
+            "url": "https://spansh.co.uk",
+            "method":"GET"
+        },
+        {
+            "source_id":"google",
+            "url":"https://google.com"
+        }
+    ]
+}
