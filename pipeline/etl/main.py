@@ -1,6 +1,7 @@
 import os
 import pprint
 from .config import load_config
+from etl import load
 
 """
 Main ETL Pipeline File
@@ -24,3 +25,5 @@ def run_etl_pipeline():
     print("Beginning download stream...\n")
 
     # Stream File Download
+    load.stream_download("", "", "")
+    load.finalize_download("", "")
