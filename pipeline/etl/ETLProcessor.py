@@ -25,6 +25,7 @@ class ETLProcessor:
     source_id: str
     output_paths: dict
     processed: int
+    skipped: int
 
     def __init__(self, url, output_dir, source_id):
         """
@@ -130,4 +131,21 @@ class ETLProcessor:
 
                     # Define Properties
                     id64 = obj.get('id64')
-                    
+                    coords = obj.get('coords')
+
+                    # Check keys present
+                    if id64 is None or coords is None:
+                        print(f"Warning: Skipping record due to missing properties!")
+                        self.skipped += 1
+                        continue
+
+                    # Define x, y, z
+                    x = coords.get('x')
+                    y = coords.get('y')
+                    z = coords.get('z')
+
+                    # Ensure all coords found
+                    if not all(isinstance(val, (int, float)) for val in [x,y,z]):
+                        print(f"Warning: Skipping record due to non-numeric coordinates")
+                        self.skipped += 1
+                        continue
