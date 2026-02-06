@@ -13,10 +13,9 @@ from ..ETLProcessor import ETLProcessor
 
 # Constants
 OUTPUT_DIR  = "etl/tests/output"
-#URL         = "https://jsonplaceholder.typicode.com/posts/1"
-#URL         = "https://github.com/mnaatjes/elite-dangerous-dev/blob/feat/etl-pipeline/pipeline/etl/tests/dummy_data/test_data_20260205_022445.gz"
 #URL         = "https://data.gharchive.org/2024-01-01-15.json.gz" # 500MiB
-URL         = "https://wiki.mozilla.org/images/f/ff/Example.json.gz"
+#URL         = "https://wiki.mozilla.org/images/f/ff/Example.json.gz" #1KiB
+URL         = "https://github.com/mnaatjes/elite-dangerous-dev/raw/refs/heads/feat/etl-pipeline/pipeline/etl/tests/dummy_data/20260206_195716.json.gz"
 SOURCE_ID   = "edsm"
 MEMORY_PERC = 0.75
 

@@ -122,16 +122,11 @@ class ETLProcessor:
                 # Stream from URL directly to gzip
                 with gzip.GzipFile(fileobj=res.raw) as stream_gz:
                     # Parse bytes into Python Dict
-                    for line in stream_gz:
-                        # Capture Data
-                        data = json.loads(line)
-                        # Determine if list or NDJSON
-                        if isinstance(data, list):
-                            for item in data:
-                                file_raw.write(json.dumps(item) + "\n")
-                        else:
-                            #NDJSON
-                            file_raw.write(json.dumps(data) + "\n")
+                    parser = ijson.items(stream_gz, 'item')
+
+                    # Write from event as NDJSON
+                    for item in parser:
+                        file_raw.write(json.dumps(item) + "\n")
 
         # Stream Complete
         print(f"Filestream Complete: Saved to {output_raw}")
