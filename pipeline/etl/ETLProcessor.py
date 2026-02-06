@@ -2,12 +2,18 @@
 Main ETL Class for the entire ETL process for converting EDSM and Spansh data into custom binary format for C++ routing engine
 
 """
+
+
 import os
+import io
 import ijson
+import json
 import requests
 import pprint
 import struct
 import gzip
+import psutil
+import resource
 from datetime import datetime
 from pathlib import Path
 
@@ -27,8 +33,11 @@ class ETLProcessor:
     output_paths: dict
     processed: int
     skipped: int
+    _total_ram: int
+    _memory_perc: int
+    _memory_limit: float
 
-    def __init__(self, url, output_dir, source_id):
+    def __init__(self, url, output_dir, source_id, memory_percentage=0.75):
         """
         Initialize Class
 
@@ -41,7 +50,9 @@ class ETLProcessor:
         self.source_id      = source_id
         self.skipped        = 0
         self.processed      = 0
-    
+
+        # Set memory limit
+        self._set_memory_limit(memory_percentage)
 
     # --- Public Methods
     def run(self):
@@ -100,71 +111,39 @@ class ETLProcessor:
         output_raw = self.output_paths["raw"] / f"{self.source_id.lower()}_{ts}.json"
 
         # Perform HTTP Request via Context Manager
-        
-
-    def __stream_data(self):
-        """
-            Performs Download of file stream
-            1) Makes GET request
-            2) Checks for content-encoding
-            3) Decompresses zipped content
-            4) Stores in output dir
-        """
-        # Define Output Filenames
-        # Generate Timestamp
-        ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-        output_bin = self.output_paths["bin"] / f"{self.source_id.lower()}_{ts}.bin"
-        output_raw = self.output_paths["raw"] / f"{self.source_id.lower()}_{ts}.json"
-
         # Perform Context Managed Request
         with requests.get(self.url, stream=True) as res:
             # Raise Errors
             res.raise_for_status()
-            
-            # Open Binary Output File
-            # Open Raw Output File
-            with open(output_bin, 'wb') as file_binary:
-                # Ensure Content Type is application/json
-                if 'application/json' in res.headers.get('Content-Type', ''):
-                    # Check Content Encoding for gzip Compression
-                    if 'gzip' in res.headers.get('Content-Encoding', '').lower():
-                        # Decompress Raw Data Stream
-                        unzipped    = gzip.GzipFile(fileobj=res.raw, mode='rb')
-                        json_stream = unzipped
-                    else:
-                        json_stream = res.raw
-                else:
-                    raise TypeError(f"Invalid Content-Type for incoming data! Content-Type: {res.headers.get('Content-Type')}")
-                
-                # Feed Stream into iJSON.items
-                for obj in ijson.items(json_stream, 'item'):
-                    # TODO: Perform object validation
-                    # TODO: e.g. if not isinstance(obj, dict): {...} | if 'id64' not in obj
 
-                    # Define Properties
-                    id64 = obj.get('id64')
-                    coords = obj.get('coords')
+            # Open/Create output file and begin to write
+            with open(output_raw, 'w', encoding='utf-8') as file_raw:
 
-                    # Check keys present
-                    if id64 is None or coords is None:
-                        print(f"Warning: Skipping record due to missing properties!")
-                        self.skipped += 1
-                        continue
+                # Stream from URL directly to gzip
+                with gzip.GzipFile(fileobj=res.raw) as stream_gz:
+                    # Parse bytes into Python Dict
+                    for line in stream_gz:
+                        # Capture Data
+                        data = json.loads(line)
+                        # Determine if list or NDJSON
+                        if isinstance(data, list):
+                            for item in data:
+                                file_raw.write(json.dumps(item) + "\n")
+                        else:
+                            #NDJSON
+                            file_raw.write(json.dumps(data) + "\n")
 
-                    # Define x, y, z
-                    x = coords.get('x')
-                    y = coords.get('y')
-                    z = coords.get('z')
+        # Stream Complete
+        print(f"Filestream Complete: Saved to {output_raw}")
 
-                    # Ensure all coords found
-                    if not all(isinstance(val, (int, float)) for val in [x,y,z]):
-                        print(f"Warning: Skipping record due to non-numeric coordinates")
-                        self.skipped += 1
-                        continue
+    def _set_memory_limit(self, percentage):
+        # Get system ram
+        total_ram = psutil.virtual_memory().total
+        # Set Resource Usage
+        limit = int(total_ram * percentage)
+        # Apply resource limit
+        resource.setrlimit(resource.RLIMIT_AS, (limit, limit))
 
-                    # Pack data into binary (qddd = long long, double, double, double)
-                    packed = struct.pack('qddd', id64, x, y, z)
-                    file_binary.write(packed)
-                    
-                    # Set processed
-                    self.processed += 1
+        #Log Memory Change
+        # TODO: Add to logger
+        #print(f"Memory Limit set to {limit // (1024**2)}MB")
