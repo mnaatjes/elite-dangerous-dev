@@ -3,7 +3,7 @@
 import os
 import json
 
-from etl.ETLProcessor import ETLProcessor
+from etl.src.ETLProcessor import ETLProcessor
 
 def main():
     """

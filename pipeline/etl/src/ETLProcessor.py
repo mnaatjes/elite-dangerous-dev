@@ -17,7 +17,7 @@ import resource
 from datetime import datetime
 from pathlib import Path
 
-from .common.utils import here
+from ..common.utils import here
 
 class ETLProcessor:
     """sumary_line
