@@ -2,8 +2,9 @@ import requests
 import gzip
 import shutil
 from pathlib import Path
+from datetime import datetime
 
-def download_decompressed_segment(url, output_path, mib_limit=5):
+def download_decompressed_segment(url, output_path, mib_limit=1):
     """
     Downloads a gzipped file, decompresses it on the fly, 
     and saves exactly the first X MiB as a text file.
@@ -47,8 +48,10 @@ def download_decompressed_segment(url, output_path, mib_limit=5):
 
 # --- CONFIGURATION ---
 # Use your GitHub Raw link or EDSM/Spansh .json.gz link here
-URL = "https://downloads.spansh.co.uk/systems_1week.json.gz"
-OUTPUT = "sample_data_segment.json"
+ts       = datetime.now().strftime("%Y%m%d_%H%M%S")
+URL      = "https://downloads.spansh.co.uk/systems_1week.json.gz"
+ROOT_DIR = "/srv/elite-dangerous-dev/pipeline/etl/tests/dummy_data/"
+OUTPUT   = f"{ROOT_DIR}spansh_{ts}.json"
 
 if __name__ == "__main__":
-    download_decompressed_segment(URL, OUTPUT)
+    download_decompressed_segment(URL, OUTPUT, 1)

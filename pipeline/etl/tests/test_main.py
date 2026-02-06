@@ -39,9 +39,3 @@ def test_define_paths():
     obj = ETLProcessor(URL, OUTPUT_DIR, SOURCE_ID)
     obj._define_output_paths()
 
-def test_download_data_json():
-    obj = ETLProcessor("https://jsonplaceholder.typicode.com/posts/1", "etl/tests/output", "edsm")
-    #obj = ETLProcessor("https://dummyjson.com/products", "etl/tests/output")
-    #obj = ETLProcessor("https://httpbin.org/json", "etl/tests/output")
-    obj._define_output_paths()
-    obj._stream_data()

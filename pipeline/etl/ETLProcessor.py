@@ -6,6 +6,7 @@ import os
 import ijson
 import requests
 import pprint
+import struct
 import gzip
 from datetime import datetime
 from pathlib import Path
@@ -38,6 +39,8 @@ class ETLProcessor:
         self.url            = url
         self.output_dir     = Path(output_dir)
         self.source_id      = source_id
+        self.skipped        = 0
+        self.processed      = 0
     
 
     # --- Public Methods
@@ -83,15 +86,23 @@ class ETLProcessor:
         # Create Output Path Dict
         self.output_paths = {
             "raw": base_path / "raw",
-            "bin": base_path / "bin"
+            "bin": base_path / "bin",
+            "tmp": base_path / "tmp"
         }
 
         # Verify Paths exist / Make them
         for p in self.output_paths.values():
             p.mkdir(parents=False, exist_ok=True)
 
+    def _download_gzip(self):
+        # Define Output Filename for output/raw
+        ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+        output_raw = self.output_paths["raw"] / f"{self.source_id.lower()}_{ts}.json"
 
-    def _stream_data(self):
+        # Perform HTTP Request via Context Manager
+        
+
+    def __stream_data(self):
         """
             Performs Download of file stream
             1) Makes GET request
@@ -111,7 +122,8 @@ class ETLProcessor:
             res.raise_for_status()
             
             # Open Binary Output File
-            with open(output_bin, 'wb') as f_bin:
+            # Open Raw Output File
+            with open(output_bin, 'wb') as file_binary:
                 # Ensure Content Type is application/json
                 if 'application/json' in res.headers.get('Content-Type', ''):
                     # Check Content Encoding for gzip Compression
@@ -125,7 +137,7 @@ class ETLProcessor:
                     raise TypeError(f"Invalid Content-Type for incoming data! Content-Type: {res.headers.get('Content-Type')}")
                 
                 # Feed Stream into iJSON.items
-                for obj in ijson.items(json_stream, ''):
+                for obj in ijson.items(json_stream, 'item'):
                     # TODO: Perform object validation
                     # TODO: e.g. if not isinstance(obj, dict): {...} | if 'id64' not in obj
 
@@ -149,3 +161,10 @@ class ETLProcessor:
                         print(f"Warning: Skipping record due to non-numeric coordinates")
                         self.skipped += 1
                         continue
+
+                    # Pack data into binary (qddd = long long, double, double, double)
+                    packed = struct.pack('qddd', id64, x, y, z)
+                    file_binary.write(packed)
+                    
+                    # Set processed
+                    self.processed += 1
