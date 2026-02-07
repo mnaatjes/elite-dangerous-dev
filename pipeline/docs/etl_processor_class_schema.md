@@ -1,11 +1,6 @@
 # ETLProcessor Class Schema
 
-This document outlines the proposed class structure for the `ETLProcessor` which is responsible for the v1 data pipeline. This design refactors the procedural script into a more organized, testable, and reusable object-oriented structure.
-
-```python
-# ETLProcessor Class Schema
-
-This document outlines the proposed class structure for the `ETLProcessor` which is responsible for the v1 data pipeline. This design refactors the procedural script into a more organized, testable, and reusable object-oriented structure.
+This document outlines the class structure for the `ETLProcessor`, which now serves as the orchestrator for the ETL pipeline. It coordinates the activities of the `Extractor`, `Transformer`, and `Loader` components, rather than performing the ETL steps directly. This design promotes modularity, testability, and adherence to the Single Responsibility Principle.
 
 ```python
 import os
@@ -16,44 +11,62 @@ from datetime import datetime
 from pathlib import Path
 from typing import Dict, Any
 
+# Import the specialized components
+from .Extractor import Extractor
+from .Transformer import Transformer
+from .Loader import Loader
+from .MemoryManager import MemoryManager
+from ..common.utils import here # Assuming Utils is used for paths/checksums
+
 class ETLProcessor:
     """
-    Encapsulates the entire ETL process for converting EDSM data into a
+    Orchestrates the entire ETL process for converting EDSM data into a
     custom binary format for the C++ routing engine.
+    Delegates extraction, transformation, and loading to specialized components.
     """
     # --- Properties ---
-
     edsm_url: str
     output_dir: Path
     source_id: str
-    downloaded_json_gz_path: Path
-    decompressed_json_path: Path
-    binary_file_path: Path
-    checksum_file_path: Path
     processed_count: int
     skipped_count: int
 
+    # Injected dependencies
+    _extractor: Extractor
+    _transformer: Transformer
+    _loader: Loader
+    _memory_manager: MemoryManager
+
     # --- Initialization ---
 
-    def __init__(self, edsm_url: str, output_dir: str, source_id: str):
+    def __init__(self,
+                 edsm_url: str,
+                 output_dir: str,
+                 source_id: str,
+                 extractor: Extractor,
+                 transformer: Transformer,
+                 loader: Loader,
+                 memory_manager: MemoryManager):
         """
-        Initializes the ETLProcessor with necessary configuration.
+        Initializes the ETLProcessor with necessary configuration and its dependencies.
 
         Args:
             edsm_url: The URL to the EDSM systems data dump.
             output_dir: The directory to store downloaded and processed files.
             source_id: An identifier for the data source (e.g., 'edsm').
+            extractor: An instance of the Extractor class.
+            transformer: An instance of the Transformer class.
+            loader: An instance of the Loader class.
+            memory_manager: An instance of the MemoryManager class.
         """
         self.edsm_url = edsm_url
         self.output_dir = Path(output_dir)
         self.source_id = source_id
 
-        # Define file paths based on current timestamp for uniqueness
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        self.downloaded_json_gz_path = self.output_dir / "raw" / f"{self.source_id}_{timestamp}.json.gz"
-        self.decompressed_json_path = self.output_dir / "raw" / f"{self.source_id}_{timestamp}.json"
-        self.binary_file_path = self.output_dir / "bin" / f"{self.source_id}_{timestamp}.bin"
-        self.checksum_file_path = self.binary_file_path.with_suffix(".sha256")
+        self._extractor = extractor
+        self._transformer = transformer
+        self._loader = loader
+        self._memory_manager = memory_manager # Memory limit set on init of MemoryManager
 
         self.processed_count = 0
         self.skipped_count = 0
@@ -62,58 +75,44 @@ class ETLProcessor:
 
     def run(self):
         """
-        Executes the full ETL pipeline:
-        1. Ensures output directory structure exists.
-        2. Downloads raw data (json.gz) and verifies its integrity with SHA256.
-        3. Decompresses the raw data to a temporary .json file.
-        4. Processes records from the temporary JSON to binary, validating each.
+        Executes the full ETL pipeline by coordinating its specialized components.
+        1. Configures components (if necessary).
+        2. Initiates data extraction via Extractor.
+        3. Streams raw data to Transformer for processing (decompression, parsing, validation, packing).
+        4. Streams transformed binary data to Loader for writing.
         5. Generates a checksum for the final binary file.
-        Handles logging for the entire process.
+        Handles overall logging and error reporting for the process.
         """
-        pass # Implementation will be added
+        print(f"ETL Process started for source: {self.source_id}")
 
-    # --- Private Methods ---
+        # Example flow (actual implementation would involve streaming data through components)
+        # 1. Fetch data stream
+        data_stream = self._extractor.fetch_data(self.edsm_url, self.output_dir / "raw")
 
-    def _download_data(self):
-        """
-        Downloads the compressed source data file (`.json.gz`) to a local raw directory.
-        After download, it computes its SHA256 hash. If a source-provided checksum
-        is available, it verifies the downloaded file's integrity against it.
-        """
-        pass # Implementation will be added
+        # 2. Transform and load data
+        # The transformer would yield binary chunks, and the loader would write them
+        # This part requires careful coordination for true streaming.
 
-    def _decompress_data(self):
-        """
-        Decompresses the locally stored `.json.gz` file into a temporary,
-        uncompressed `.json` file.
-        """
-        pass # Implementation will be added
+        # For demonstration, assume transformer can process stream and return results or yield
+        # For actual streaming, ETLProcessor would iterate over transformer's output
+        # and pass to loader.
 
-    def _validate_record(self, record: Dict[str, Any]) -> bool:
-        """
-        Performs comprehensive validation on a single record from the JSON data.
-        Checks for:
-        - Presence of required keys (`id64`, `coords`, `x`, `y`, `z`).
-        - Correct data types for `id64` and coordinates.
-        - Realistic range checks for coordinate values (e.g., galactic bounds).
-        Returns True if the record is valid, False otherwise.
-        """
-        pass # Implementation will be added
+        # Example simplified call:
+        # binary_chunks = self._transformer.transform_stream(data_stream)
+        # self._loader.load_data(binary_chunks, self.output_dir / "bin" / f"{self.source_id}.bin")
 
-    def _process_records(self):
-        """
-        Reads records from the decompressed `.json` file, validates each using
-        `_validate_record()`, packs valid records into a binary format, and writes
-        them to the binary output file.
-        Updates `self.processed_count` and `self.skipped_count`.
-        """
-        pass # Implementation will be added
+        # 3. Generate checksum (handled by ETLProcessor or delegated)
+        # self._generate_checksum(self.output_dir / "bin" / f"{self.source_id}.bin")
 
-    def _generate_checksum(self):
+        print(f"ETL Process finished for source: {self.source_id}")
+
+    # --- Private Methods (for orchestration specific tasks) ---
+
+    def _generate_checksum(self, binary_file_path: Path):
         """
-        Generates a SHA256 checksum for the created binary file
-        (`systems_processed.bin`) to ensure data integrity and saves it
-        to a `.sha256` file alongside the binary.
+        Generates a SHA256 checksum for a given binary file.
         """
-        pass # Implementation will be added
-``````
+        print(f"Generating checksum for {binary_file_path}")
+        # Implementation to read file and compute hash
+        pass
+```

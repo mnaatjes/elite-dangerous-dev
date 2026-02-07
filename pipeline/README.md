@@ -4,7 +4,7 @@ This directory contains scripts and tools for the project's data engineering tas
 
 ## ETL Module (`etl/`)
 
-The `etl/` subdirectory contains the primary Python-based pipeline for processing bulk data dumps (e.g., from EDSM) into a format optimized for the C++ routing engine.
+The `etl/` subdirectory contains the primary Python-based pipeline for processing bulk data dumps (e.g., from EDSM) into a format optimized for the C++ routing engine. This pipeline is now structured using a modular class-based approach, orchestrated by `ETLProcessor` and composed of `Extractor`, `Transformer`, and `Loader` components.
 
 Refer to the `etl/SETUP.md` guide for instructions on how to set up the Python environment and run the scripts.
 
@@ -14,11 +14,11 @@ This flowchart visualizes the V1 data pipeline, which processes the raw data dum
 
 ```mermaid
 graph TD
-    subgraph "Python ETL Script (process_data.py)"
-        A["Start"] --> B["Download systemsWithCoordinates.json.gz"];
-        B --> C["Stream-parse the gzipped JSON<br/>(using ijson)"];
-        C --> D["For each system, extract<br/>id64, x, y, z"];
-        D --> E["Pack and write to<br/>'systems_processed.bin'"];
+    subgraph "Python ETL Pipeline"
+        A["Start: main.py"] --> B["ETLProcessor.run()<br/>(Orchestrates)"];
+        B --> C["Extractor.fetch_data()<br/>(Downloads json.gz stream)"];
+        C --> D["Transformer.transform_stream()<br/>(Decompresses, parses, validates, extracts, packs)"];
+        D --> E["Loader.load_data()<br/>(Writes to systems_processed.bin)"];
     end
 
     subgraph "C++ Routing Engine"
@@ -39,8 +39,8 @@ To ensure the reliability and correctness of the ETL pipeline, we will implement
 *   **Purpose:** To test individual functions and logic components in isolation.
 *   **Tool:** `pytest`
 *   **Strategy:**
-    *   **Data Processing Logic:** Use small, hand-crafted `sample_input.json` and corresponding `expected_output.bin` files. Tests will run the `process_data()` function against this sample and assert byte-for-byte equality of the output.
-    *   **Network Operations:** Use `pytest-mock` to mock network requests (e.g., `requests.get`) to test download logic without actual internet access.
+    *   **Data Processing Logic:** Use small, hand-crafted `sample_input.json` and corresponding `expected_output.bin` files. Tests will run the `Transformer.transform()` method (or equivalent) against this sample and assert byte-for-byte equality of the output.
+    *   **Network Operations:** Use `pytest-mock` to mock network requests (e.g., `requests.get` within the `Extractor`) to test download logic without actual internet access.
 
 ### 2. Integration Testing
 
@@ -61,11 +61,11 @@ Tests will be co-located with the `etl` module:
 
 ```
 pipeline/etl/
-|-- process_data.py
+|-- main.py
 |-- requirements.txt
 |-- SETUP.md
 `-- tests/
-    |-- sample_data/
+    |-- data/
     |   |-- sample_input.json
     |   `-- expected_output.bin
     `-- test_processing.py
@@ -77,8 +77,8 @@ pipeline/etl/
 
 ### Data Validation
 
-*   **Stage:** Validation occurs during the **Transform stage** in the `process_data.py` script.
-*   **Method:** As each system object is streamed from the source file, the script will perform fast, inline checks for the presence and correct type of our minimally required fields (`id64`, `name`, `coords`).
+*   **Stage:** Validation occurs within the `Transformer` class during the **Transform stage**.
+*   **Method:** As each system object is streamed from the source, the `Transformer` will perform fast, inline checks for the presence and correct type of our minimally required fields (`id64`, `name`, `coords`).
 *   **Error Handling:** Any record failing validation will be skipped and a warning will be logged. This ensures that malformed data in the source dump does not halt the entire pipeline.
 
 ### Logging Strategy
@@ -88,7 +88,7 @@ Logging is handled independently by each major component of the project.
 #### Python ETL Script
 
 *   **Library:** Python's built-in `logging` module.
-*   **Scope:** The script will log key events such as the start and end of the process, file download status, number of records processed, number of records skipped due to validation failures, and any critical errors.
+*   **Scope:** The `ETLProcessor` and its constituent components (`Extractor`, `Transformer`, `Loader`) will log key events such as the start and end of the process, file download status, number of records processed, number of records skipped due to validation failures, and any critical errors.
 *   **Output:** Logs will be written to both the console (for interactive use) and a dedicated log file (e.g., `pipeline/etl/logs/etl_process.log`).
 
 #### C++ Routing Engine

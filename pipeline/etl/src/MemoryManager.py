@@ -1,14 +1,21 @@
-from resource import setrlimit
-from psutil import virtual_memory
+import psutil
+import resource
 
 """
-    Memory Management Class for use in ETL Pipeline
+    Memory Manager for ETL Pipeline
 """
+
 class MemoryManager:
     # Properties
     _memory_limit_percentage: float
     _memory_limit_bytes: int
-    _isset_memory_limit: bool
+    _total_ram: int
 
-    def __init__(self, memory_limit_percentage):
-        self._memory_limit_percentage = memory_limit_percentage
+    def __init__(self, memory_limit_percentage: float):
+        pass
+
+    def set_task_limit(self):
+        """
+            Applies the memory limit to the current process.
+        """
+        pass
