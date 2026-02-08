@@ -4,3 +4,4 @@ zstandard
 pytest
 pytest-mock
 psutils
+python-magic
