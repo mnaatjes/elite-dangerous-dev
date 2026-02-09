@@ -1,8 +1,6 @@
 """Main Document Script for Running the ETL Pipeline
 """
 
-from etl.src.ETLProcessor import ETLProcessor
-
 def main():
     """
         Implement ETL Processor
