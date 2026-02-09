@@ -5,9 +5,10 @@ import mimetypes
 import magic
 import warnings
 
-from typing import Literal
+from typing import Literal, Optional
 from urllib.parse import urlparse
 from pathlib import Path
+from datetime import datetime
 
 """
     Utility Class for ETL Pipeline
@@ -217,3 +218,31 @@ class Utils:
                 else:
                     # Return default from Content-Encoding header
                     return header
+
+    @staticmethod
+    def resolve_download_directory(base_raw_downloads_dir: Path, source_id: str, timestamp: datetime) -> Path:
+        """
+        Constructs the target directory path for a raw download and ensures it exists.
+        Format: <base_raw_downloads_dir>/<source_id>/<year>/<month>/
+        """
+        # Check path for objects
+        if isinstance(base_raw_downloads_dir, str):
+            base_raw_downloads_dir = Path(base_raw_downloads_dir)
+        
+        # Build Path
+        target_dir = base_raw_downloads_dir / source_id / str(timestamp.year) / f"{timestamp.month:02d}"
+        target_dir.mkdir(parents=True, exist_ok=True)
+        return target_dir
+
+    @staticmethod
+    def generate_raw_filename(source_id: str, timestamp: datetime, extension: str = ".json.gz", data_version: Optional[str] = None) -> str:
+        """
+        Generates a standardized raw filename for a downloaded file.
+        Format: <source_id>_systems_[vX.Y.Z_]<YYYYMMDD-HHMMSS>.<extension>
+        """
+        version_str = f"v{data_version}_" if data_version else ""
+        timestamp_str = timestamp.strftime("%Y%m%d-%H%M%S")
+        
+        # Assuming the 'systems' part is constant for now, based on documentation examples
+        filename = f"{source_id}_{version_str}_{timestamp_str}{extension}"
+        return filename

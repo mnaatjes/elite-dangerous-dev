@@ -3,7 +3,7 @@ import os
 import json
 import mimetypes
 from pathlib import Path
-from ..src.Utils import Utils
+from ..src.Common.Utils import Utils
 """
     Utility Class Tester
 """

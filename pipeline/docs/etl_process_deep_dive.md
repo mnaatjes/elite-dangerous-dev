@@ -11,8 +11,9 @@ This section details the step-by-step process of converting the raw, compressed 
 ```mermaid
 graph TD
     A["Start: main.py"] --> B["ETLProcessor (Orchestrates)"];
-    B --> C["Extractor (Fetches raw data stream)"];
-    C --> D["Transformer (Decompresses, parses, validates, extracts, packs)"];
+    B --> C["Extractor (Downloads raw json.gz)"];
+    C --> C1["Local Staging: raw_data.json.gz"];
+    C1 --> D["Transformer (Reads & Decompresses stream)"];
     D --> E["Loader (Writes processed binary data)"];
     E --> F["systems_processed.bin"];
     F --> G["C++ Routing Engine (Loads .bin, builds R-Tree)"];
@@ -28,9 +29,10 @@ The ETL process is orchestrated by the `ETLProcessor` class, which delegates spe
     *   Sanitizing and validating the provided URL.
     *   Performing an HTTP GET request to the source (e.g., EDSM server) for the `systemsWithCoordinates.json.gz` file.
     *   Checking HTTP headers (`Content-Type`, `Content-Length`) to ensure the response is of the expected format and size.
-    *   Returning a raw, compressed data stream (e.g., `requests.Response.raw`) to the `ETLProcessor`.
-3.  **Data Transformation (`Transformer.transform_stream()`):** The `ETLProcessor` passes the raw data stream received from the `Extractor` to the `Transformer`. The `Transformer` then performs the following steps:
-    *   **Decompression:** Decompresses the gzipped stream in real-time.
+    *   **Downloading the complete `json.gz` file to a local staging directory.**
+    *   **Returning the path to the locally downloaded compressed file to the `ETLProcessor`.**
+3.  **Data Transformation (`Transformer.transform_stream()`):** The `ETLProcessor` passes the **path to the locally downloaded `json.gz` file** received from the `Extractor` to the `Transformer`. The `Transformer` then opens this local file and performs the following steps:
+    *   **Decompression:** Decompresses the gzipped stream in real-time as it reads from the local file.
     *   **Stream Parsing:** Utilizes `ijson` to parse the JSON stream, yielding one complete system object at a time without loading the entire dataset into memory.
     *   **Validation (`Transformer._validate_record()`):** For each streamed object, comprehensive validation logic is applied. This includes:
         *   **Presence Check:** Verifying that required keys (`id64`, `coords`, `x`, `y`, `z`) exist.

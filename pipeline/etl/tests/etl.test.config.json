@@ -1,0 +1,22 @@
+{
+    "etl": {
+        "version": "1.0",
+        "root_dir":"/src/elite-dangerous-dev/",
+        "base_download_path": "etl/tests/data/downloads/",
+        "files": [
+            {
+                "source_id": "spansh",
+                "url": "https://downloads.spansh.co.uk/systems_1day.json.gz",
+                "frequency": "1week",
+                "desc":"Daily System Information with coordinates"
+            },
+            {
+                "source_id": "edsm",
+                "url": "https://www.edsm.net/dump/systemsWithCoordinates7days.json.gz",
+                "frequency": "1week",
+                "desc": "Weekly system updates with coords"
+            }
+        ]
+    },
+    "logging": {}
+}
