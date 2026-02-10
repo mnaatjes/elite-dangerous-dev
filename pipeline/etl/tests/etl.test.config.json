@@ -1,20 +1,26 @@
 {
     "version":"1.0",
-    "files": [
-        {
-            "source_id": "spansh",
-            "label":"systems",
-            "url": "https://downloads.spansh.co.uk/systems_1day.json.gz"
-        }
-    ],
     "downloads": {
         "base_directory":"etl/tests/downloads",
-        "strategies": {
-            "application/json": "download_json",
-            "application/gzip": "download_binary",
-            "application/octet-stream": "download_binary",
-            "default": "download_binary"
-        },
+        "sources_filepath":"etl/tests/etl.tests.sources.json",
+        "strategies": [
+            {
+                "mime_type": "application/json",
+                "handler": "download_json"
+            },
+            {
+                "mime_type":"application/gzip",
+                "handler":"download_binary"
+            },
+            {
+                "mime_type":"application/octet-stream",
+                "handler":"download_binary"
+            },
+            {
+                "mime_type":"default",
+                "handler":"download_binary"
+            }
+        ],
         "max_chunk_size": 16777216,
         "timestamp_format": "%Y%m%d_%H%M%S"
     },
