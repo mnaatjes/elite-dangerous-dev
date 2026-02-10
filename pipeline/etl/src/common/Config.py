@@ -136,6 +136,7 @@ class Config:
             "downloads": {
                 "base_directory": str,
                 "sources_filepath": str,
+                "manifest_directory": str,
                 "strategies": list,
                 "max_chunk_size": int,
                 "timestamp_format": str,

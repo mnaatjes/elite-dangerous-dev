@@ -3,6 +3,7 @@
     "downloads": {
         "base_directory":"etl/tests/downloads",
         "sources_filepath":"etl/tests/etl.tests.sources.json",
+        "manifest_directory": "etl/tests/manifests",
         "strategies": [
             {
                 "mime_type": "application/json",

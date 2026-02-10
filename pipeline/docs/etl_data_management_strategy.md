@@ -58,17 +58,17 @@ To avoid unnecessary network traffic and disk usage, a check for previously down
 
 ```mermaid
 graph TD
-    A[Start ETL Process] --> B{Check for Recent Download?};
-    B -- Yes (same URL, recent date) --> C[Skip Download & Reuse Existing];
-    B -- No / Requires Update --> D[Extractor: Start Download];
-    D --> E[Extractor: Compute Raw SHA256 & Write .sha256 File];
-    E --> F[Extractor: Save raw_data.json.gz to Disk];
-    F --> G[ETLProcessor: Create/Update MetaData Object];
-    G --> H[MetaData: Save meta.json];
-    H --> I[Continue ETL Pipeline (Transformer, Loader)];
-    I --> J[ETLProcessor: Update MetaData with Processed Info];
-    J --> K[MetaData: Update meta.json];
-    K --> L[End ETL Process];
+    A[Start ETL Process] --> B{Check for Recent Download?}
+    B -- Yes (same URL, recent date) --> C[Skip Download & Reuse Existing]
+    B -- No / Requires Update --> D[Extractor: Start Download]
+    D --> E[Extractor: Compute Raw SHA256 & Write .sha256 File]
+    E --> F[Extractor: Save raw_data.json.gz to Disk]
+    F --> G[ETLProcessor: Create/Update MetaData Object]
+    G --> H[MetaData: Save meta.json]
+    H --> I[Continue ETL Pipeline Transformer Loader]
+    I --> J[ETLProcessor: Update MetaData with Processed Info]
+    J --> K[MetaData: Update meta.json]
+    K --> L[End ETL Process]
 ```
 
 ### Mechanism
