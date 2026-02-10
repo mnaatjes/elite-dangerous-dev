@@ -1,0 +1,20 @@
+{
+    "metadata": {
+        "manifest_type": "basemanifest",
+        "process": "downloads",
+        "domain": "stations",
+        "version": "1.0",
+        "created_at": "2026-02-10T13:59:46.429106+00:00",
+        "updated_at": "2026-02-10T16:39:06.283535+00:00"
+    },
+    "records": {
+        "some_filename_38298sfs873dii3j3.json.gz": {
+            "filepath": "path/to/file/filename.json.gz",
+            "sha256": "33c873c682aa2f516f5a236d122da27c8d4bda4b4cf3aade0dc953ac9d288840",
+            "size_bytes": 9180948,
+            "status": "completed",
+            "downloaded_at": "2026-02-09T22:01:33.003383",
+            "etag": "9-203940-937sd"
+        }
+    }
+}
