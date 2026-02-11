@@ -1,81 +1,81 @@
 from abc import ABC, abstractmethod
+from pydantic import BaseModel, Field, ValidationError
+from typing import Literal, Dict, Type, Any, Optional
+
+class ShapeSchema(BaseModel):
+    name: str
+    sides:int
+
+class CircleSchema(BaseModel):
+    name: str
+    sides: None
+    version: str
+
+# Const declaration with Typing
+SCHEMA_MAP: Dict[str, Type[ShapeSchema]] = {
+    "circle": CircleSchema,
+    "square": ShapeSchema
+}
+
 
 # --- Codebase for Factory ---
 class Shape(ABC):
-    def __init__(self, **kwargs):
-        for key, val in kwargs.items():
-            setattr(self, key, val)
+    def __init__(self, name:str, sides:int, version:str):
+        self.name = name
+        self.sides = sides
+        self.version = version
 
-    @abstractmethod
     def draw(self) -> str:
-        pass
-
-class _ShapeFactory:
-    """Pure Creation (Internal Use Only)"""
-    _blueprints = {}
-
-    @classmethod
-    def create(cls, name:str, **default_attrs):
-        """Creates a new SubClass of Shape Abstract Class"""
-        class_name = name.capitalize()
-
-        # Define Standart Methods for SubClasses
-        def draw(self):
-            return f"I am a {class_name} with properties: {self.__dict__}"
-        
-        # Combine Attributes
-        class_attributes = {**default_attrs, "draw":draw}
-
-        # use 'type' to manufacture the class
-        product_class = type(class_name, (Shape,), class_attributes)
-
-        # Store in archive
-        # Return new class
-        cls._blueprints[name.lower()] = product_class
-        return product_class
-    
-    @classmethod
-    def get_blueprints(cls):
-        return cls._blueprints
-    
-    @classmethod
-    def clear(cls):
-        cls._blueprints.clear()
+        print(f"I am a {self.name} and I have {self.sides} sides!")
 
 class ShapeRegistry:
-    _instances = {}
-    """Stores instances and orchestrates creation of new subclasses"""
+    _managed_shapes: Dict[str, Shape] = {}
+    _instance = None
+
+    def __new__(cls, sides:int, version:str):
+        # Check that a Registry Instance doesn't already exist
+        if cls._instance is None:
+            # Create new Instance of Registry
+            # Initialize _instances dict
+            cls._instance = super(ShapeRegistry, cls).__new__(cls)
+            cls._managed_shapes = {}
+
+        # Register Declared Shapes
+        for name, schema in SCHEMA_MAP.items():
+            cls._register_shape(name, sides, version)
+
+        # Return Registry Instance
+        return cls._instance
+
+    def __init__(self, sides:int, version:str):
+        pass
+
     @classmethod
-    def get_instance(cls, name: str, **kwargs) -> Shape:
-        # normalize
-        name = name.lower()
+    def _register_shape(cls, name:str, sides:int, version:str):
+        shape = Shape(name, sides, version)
+        cls._managed_shapes[name] = shape
 
-        # Check for instance
-        if name not in cls._instances:
-            # Verify blueprint available
-            if name not in _ShapeFactory._blueprints:
-                # Create New Class
-                _ShapeFactory.create(name)
-
-            # Grab class prototype from _Factory
-            # Get instance and apply parameters
-            prototype   = _ShapeFactory._blueprints[name]
-            instance    = prototype(**kwargs)
-
-            # Store instance in registry
-            cls._instances[name] = instance
-        
-        # Return instance from registry
-        return cls._instances[name]
+    @classmethod
+    def get_instance(cls, name: str) -> Shape:
+        if name.lower() in SCHEMA_MAP:
+            if name in cls._managed_shapes:
+                return cls._managed_shapes[name]
+            
+            # Shape was not registered and cannot be accessed
+            raise KeyError(f"Shape {name} is NOT registered! It must be registered during Initialization!")
+        # Not in Schema Map; Cannot Be Registered
+        raise ValidationError(f"Shape name {name} has no schema and cannot be registered!")
 
     @classmethod
     def list_inventory(cls):
         return list(cls._instances.keys())
 
+    def __getattr__(self, name):
+        pass
+
 # --- Implementing Tests ---
-def test_factory():
-    #base = Shape()
-    triangle = ShapeRegistry.get_instance("triangle", size=3, perimiter=24)
-    inventory = ShapeRegistry.list_inventory()
-    print(inventory)
-    print(triangle.draw())
+def test_registry():
+    registry = ShapeRegistry(3, "1.0")
+    print(registry)
+    registry.get_instance("circle").draw()
+    registry.square.draw()
