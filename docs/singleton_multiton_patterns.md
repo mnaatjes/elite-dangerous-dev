@@ -1,3 +1,22 @@
+# Singleton and Multiton Design Patterns in Python
+
+Design patterns are reusable solutions to common problems in software design. The Singleton and Multiton patterns are creational patterns that control object instantiation, ensuring that a class has only one instance (Singleton) or a limited number of instances (Multiton) for specific keys or types.
+
+## Singleton Pattern
+
+The **Singleton pattern** restricts the instantiation of a class to a single object. This is useful when exactly one object is needed to coordinate actions across the system. Common use cases include logger objects, configuration managers, or objects that manage a single resource like a database connection pool.
+
+In Python, the Singleton pattern is often implemented by overriding the `__new__` method. The `__new__` method is responsible for creating a new instance of a class, while `__init__` is responsible for initializing that instance. By controlling `__new__`, you can ensure that only one instance is ever created and returned. Subsequent calls to the class constructor will return the same instance.
+
+## Multiton Pattern
+
+The **Multiton pattern** is an extension of the Singleton pattern. Instead of ensuring only one instance of a class, it ensures that only a limited number of instances are created, typically managed by a key or name. This means that for each unique key, there will be a single instance of the class. It's useful when you need to manage a pool of objects where each object serves a specific purpose identified by a key. For example, managing multiple database connections, where each connection corresponds to a different database name.
+
+Similar to Singleton, the Multiton pattern in Python is implemented by overriding `__new__` and maintaining a registry (usually a dictionary) within the class to store the created instances, keyed by their identifier. When a new instance is requested, `__new__` checks if an instance for that key already exists in the registry. If it does, the existing instance is returned; otherwise, a new one is created, stored in the registry, and then returned.
+
+Both patterns emphasize controlled instantiation and can help in managing resources efficiently and preventing conflicts that might arise from multiple instances of certain types of objects.
+
+```python
 from abc import ABC, abstractmethod
 from pydantic import BaseModel, Field, ValidationError
 from typing import Literal, Dict, Type, Any, Optional
@@ -86,3 +105,4 @@ def test_registry():
     square = Multiton("square", 6)
     #oval = Multiton("oval", 3)
     print(f"The following instances were created: {circle.list_instances()}")
+```
