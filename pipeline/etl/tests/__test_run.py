@@ -13,7 +13,7 @@ from pathlib import Path
 from pprint import pprint
 from urllib.parse import urlparse
 from datetime import datetime
-from ..src.common.Config import Config
+from ..src.common.config import Config
 
 # --- Constants ---
 __CHUNK_MEMORY_SIZES = {

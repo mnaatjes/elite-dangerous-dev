@@ -2,7 +2,7 @@
 Testing for Config Class
 
 """
-from ..src.common.Config import Config
+from ..src.common.config import Config
 
 def test_include(monkeypatch):
     # Set ETL_CONFIG_PATH
