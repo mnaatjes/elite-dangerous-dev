@@ -13,29 +13,8 @@ This approach is designed to be bandwidth-efficient, safe, and robust, particula
 This flowchart illustrates the end-to-end process, from probing the source to updating the manifest.
 
 ```mermaid
-graph TD
-    A[Start] --> B[Input: URL];
-    B --> C[Call SourceProber.probe()];
-    C --> D[HEAD request for headers];
-    D --> E{Manifest record matches<br>ETag/Last-Modified?};
-    E -- Yes --> F[Stop / Skip Download];
-    E -- No --> G[GET request with<br>Range header for 1KB sample];
-    G --> H[Determine MIME type with<br>python-magic];
-    H --> I[Create ProbeResult object];
-    I --> J[Call DownloadContext.execute_regime()];
-    J --> K[Context selects strategy<br>from _strategy_map];
-    K --> L{MIME type?};
-    L -- application/gzip --> M[GzipRegime];
-    L -- application/json --> N[JsonRegime];
-    L -- Other --> O[BinaryRegime];
-    M --> P[strategy.download()];
-    N --> P;
-    O --> P;
-    P --> Q[Stream download,<br>calculating SHA-256 on the fly];
-    Q --> R[Save file to destination];
-    R --> S[Return SHA-256 hash];
-    S --> T[Update Manifest with hash];
-    T --> U[End];
+graph TD;
+    A-->B;
 ```
 
 ### Class Relationships
@@ -296,3 +275,58 @@ class GzipRegime(DownloadStrategy):
 2.  **Select**: The `DownloadContext` receives the `ProbeResult`, looks up the MIME type in its `_strategy_map`, and instantiates the correct strategy (e.g., `GzipRegime`).
 3.  **Execute**: The selected strategy (`GzipRegime`) is executed. It streams the file, calculates the SHA-256 hash on-the-fly, and saves the file to disk.
 4.  **Verify**: The final SHA-256 hash is returned and can be used to update the ETL manifest, ensuring data integrity.
+For a clean, Linux-based ETL architecture that remains maintainable as you scale from simple file downloads to complex API interactions, I recommend a Service/Strategy pattern directory structure.
+
+Here is the suggested layout for your src/extractor directory:
+
+Recommended Directory Structure
+```plaintext
+src/
+└── extractor/
+    ├── source_probe/
+    │   ├── __init__.py
+    │   ├── prober.py          # The SourceProber class
+    │   └── models.py          # ProbeResult Pydantic model
+    └── download/
+        ├── __init__.py
+        ├── base.py            # DownloadStrategy (ABC)
+        ├── context.py         # DownloadContext (Orchestrator)
+        └── regimes/           # Folder for concrete implementations
+            ├── __init__.py
+            ├── binary.py      # BinaryRegime
+            ├── gzip.py        # GzipRegime
+            └── json.py        # JsonRegime
+```
+Organization Logic
+Group Regimes in a Folder: Absolutely. As you add support for things like Zstandard, S3-Multipart, or BitTorrent (common in large data sets like Spansh), your `download/` root will become cluttered. Moving them to `regimes/` keeps the "how" separate from the "orchestration."
+
+Separation of Concerns: Keeping `source_probe` and `download` as peer directories is smart. Probing is an inspection service; downloading is an action service.
+
+Scaling for API Requests
+If the ETL pipeline begins using API requests (e.g., querying the Spansh API directly instead of just downloading dumps), you should evolve the architecture to distinguish between File Retrieval and Data Retrieval.
+
+1. The "Fetcher" Abstraction
+Don't shoehorn an API request into a "DownloadRegime." Instead, create a `fetcher` module.
+
+`FileFetcher`: Uses your `DownloadContext` for static files.
+
+`ApiFetcher`: Handles pagination, rate limiting (crucial for Spansh/EDDN), and authentication.
+
+2. Scalable Directory Evolution
+As you scale, your structure should look like this:
+
+```plaintext
+src/
+└── extractor/
+    ├── services/
+    │   ├── source_probe/      # Metadata inspection
+    │   ├── file_transfer/     # Your current Download Strategy setup
+    │   └── api_client/        # Specialized API logic (Rate limiting, Auth)
+    └── pipeline/
+        ├── spansh_dump.py     # Uses file_transfer
+        └── eddn_stream.py     # Uses api_client
+```
+Pro-Tips for your Todo List
+Shared HTTPX Client: Since you mentioned a Linux environment, ensure your `DownloadContext` uses a Singleton or Factory for the `httpx.Client`. Reusing the connection pool is vital for performance when moving from probing to downloading.
+
+The "Protocol" Alternative: If you are using Python 3.8+, consider using `typing.Protocol` for your `DownloadStrategy` instead of an ABC. It allows for structural subtyping, which can be cleaner in a plugin-style architecture.
