@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 from typing import Optional
+from .checksum_metadata import ChecksumMetadata, Field
 
 class ProbeResult(BaseModel):
     """Container for the information gathered during probing the Source URL"""
@@ -8,12 +9,8 @@ class ProbeResult(BaseModel):
     content_length: Optional[int] = None
     etag: Optional[str] = None
     last_modified: Optional[str] = None
-    mime_type: Optional[str] = None
+    mime_type: str = "unknown"
     is_range_supported: bool = False
-    # Additional properties to include?
-    # - Content-Type
-    # - Content-Encoding
-    # - MD-5
-    # - sha256
-    # - Other checksums, content information, etc
+    checksum_metadata: ChecksumMetadata = Field(default_factory=ChecksumMetadata)
+    probe_error: Optional[str] = None 
     

@@ -133,6 +133,7 @@ class Config:
         # Schema for etl.config.json
         schema = {
             "version": str,
+            "user_agent": str,
             "downloads": {
                 "base_directory": str,
                 "sources_filepath": str,

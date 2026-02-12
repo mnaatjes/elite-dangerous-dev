@@ -1,5 +1,6 @@
 {
     "version":"1.0",
+    "user_agent": "Elite-Pipeline/1.0",
     "downloads": {
         "base_directory":"etl/tests/downloads",
         "sources_filepath":"etl/tests/etl.tests.sources.json",

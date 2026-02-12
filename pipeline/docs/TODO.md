@@ -1,3 +1,9 @@
+## Configuration Classs
+
+- [ ] Refactor properties and schema with pydantic
+
+- [ ] Test Refactor and loading
+
 ## Probe and Download Strategy
 
 **1. Data Models & Interface**
@@ -7,6 +13,8 @@
 - [x] Define DownloadStrategy (ABC): Create an abstract base class with a required download(url, destination, client) method that returns a SHA-256 hex digest string.
 
 **2. Probing Logic**
+
+- [ ] Create and Test SourceProber:
 
 - [ ] Implement SourceProber:
 
