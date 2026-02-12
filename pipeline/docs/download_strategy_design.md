@@ -14,16 +14,16 @@ This flowchart illustrates the end-to-end process, from probing the source to up
 
 ```mermaid
 graph TD
-    A[Start] --> B{Input: URL};
+    A[Start] --> B[Input: URL];
     B --> C[Call SourceProber.probe()];
-    C --> D{HEAD request for headers};
+    C --> D[HEAD request for headers];
     D --> E{Manifest record matches<br>ETag/Last-Modified?};
     E -- Yes --> F[Stop / Skip Download];
-    E -- No --> G{GET request with<br>Range header for 1KB sample};
+    E -- No --> G[GET request with<br>Range header for 1KB sample];
     G --> H[Determine MIME type with<br>python-magic];
     H --> I[Create ProbeResult object];
     I --> J[Call DownloadContext.execute_regime()];
-    J --> K{Context selects strategy<br>from _strategy_map};
+    J --> K[Context selects strategy<br>from _strategy_map];
     K --> L{MIME type?};
     L -- application/gzip --> M[GzipRegime];
     L -- application/json --> N[JsonRegime];
