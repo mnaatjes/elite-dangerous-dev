@@ -1,10 +1,16 @@
 """
     Test the ETL Process Run
 """
+# --- Imports: Libraries ---
 from ..src.common.config import Config
 from pathlib import Path
+from pprint import pprint
+
+# --- Imports: Sourcecode ---
+from ..src.common.manifests.manager import ManifestManager
 
 def test_etl(monkeypatch):
+
     # --- Load Configurations ---
     # Set ETL_CONFIG_PATH
     monkeypatch.setenv("ETL_CONFIG_PATH", "etl/tests/etl.test.config.json")
@@ -24,12 +30,15 @@ def test_etl(monkeypatch):
     
     # TODO: Implement a UUID for each specific execution
 
-    # TODO: Manifest Orchestration
-    # 1) Define init 
-    # 2) Perform Schema Validation
-    # 3) Load Manifest
-    # 4) Update Manifest
-    # 5) Determine Manifest Entry Format / Properties
+    # --- Manifest Initialization | Orchestration ---
+    manifest = ManifestManager(
+        root_dir="etl/tests/manifests",
+        etl_version=conf.version
+    )
+    
+    # Initialize Downloads Manifest
+    manifest.downloads
+    pprint(manifest.instances)
 
     # TODO: Metadata Orchestration
     # 1) Determine properties

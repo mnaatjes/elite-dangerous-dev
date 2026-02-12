@@ -7,9 +7,6 @@ from pydantic import ValidationError
 # --- Import Codebase ---
 from ..src.common.config import Config
 from ..src.common.manifests.manifest import Manifest
-
-# --- Import Schemas and Constants ---
-from ..src.common.manifests.schemas.metadata_schema import ManifestMetadataSchema
 from ..src.common.manifests.manager import ManifestManager
 
 def test_manifest(monkeypatch):
@@ -22,10 +19,25 @@ def test_manifest(monkeypatch):
     ts = datetime.now(timezone.utc)
 
     manifest = ManifestManager(
-        root_dir=Path("/"),
+        root_dir=Path("etl/tests/manifests/"),
         etl_version=conf.version
     )
 
-    print(manifest.instances)
     manifest.downloads
-    print(manifest.downloads.to_json())
+    manifest.validation
+    print(manifest.instances)
+
+    # 1. Prepare your raw dictionary from the downloader logic
+    new_file_data = {
+        "checksum": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "filename": "stations_data.json.gz",
+        "filepath": "/data/raw/stations_data.json.gz",
+        "content_length_bytes": 1048576,
+        "status": "completed"
+    }
+
+    # 2. Trigger the orchestration
+    manifest.downloads.add_record(new_file_data)
+
+    pprint(manifest.downloads.inspect())
+
