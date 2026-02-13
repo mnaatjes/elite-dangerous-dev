@@ -264,7 +264,162 @@ duration = event.ts_download_completed - event.ts_download_started
 mbps = (event.file_size_bytes / 1024 / 1024) / duration.total_seconds()
 ```
 
-## 6. Visualizing The Configuration Structure
+## 6. Flow Control and Orchestration
+
+Mechanisms for flow control and orchestration exist within this design, but they are currently distributed across data models rather than centralized in a single "brain." In a sophisticated ETL pipeline, flow control is typically split between **Policy** (what should happen) and **Strategy** (how it happens).
+
+### 6.1. Existing Flow Control Mechanisms
+
+Your current setup uses a combination of **Metadata-Driven Orchestration** and **Type-Switching**. Here is how control flow is determined:
+
+| Mechanism | Trigger | Component | Logic |
+| :--- | :--- | :--- | :--- |
+| **Regime Selection** | File Content | `SourceProber` | Uses "magic byte" sniffing to determine the file type (Gzip, JSON, etc.), decoupling download logic from URL extensions. |
+| **Download vs. Skip** | HTTP Headers | Orchestrator | Compares the `etag` from a probe with the `last_etag` in the `StateModel`. If they match, the download is skipped. |
+| **Storage Destination** | Configuration | `Loader` Class | Uses the `db_connection_string` from `ETLConfig` to determine where to load the data. |
+| **API vs. File** | Model Property | Orchestrator | Switches behavior based on the `source_type` property in the `ETLSource` model. |
+
+### 6.2. The Missing Orchestrator
+
+While the Configuration contains the settings and the Models contain the data, you are missing a formal **Orchestrator** (often called a `PipelineManager` or `TaskRunner`). To fully realize the flow control for "Download -> Test -> Load," you need a class that consumes the `DownloadEvent` and directs the subsequent steps.
+
+**Proposed Orchestration Flow:**
+
+1.  **Extract**: The `DownloadContext` downloads a file and returns a `DownloadEvent`.
+2.  **Validate (Test)**: A `Validator` class receives the `DownloadEvent`. It uses `etl_settings` to find the file on the Linux filesystem and performs schema and integrity validation.
+3.  **Load**: Upon successful validation, a `Loader` class uses `etl_settings.db_connection_string` to move the data into your database.
+
+To make this orchestration more robust, we should add "Control Flags" to `ETLConfig`.
+
+| Property | Purpose |
+| :--- | :--- |
+| `dry_run: bool` | If `True`, the `SourceProber` runs, but the `DownloadContext` never writes to disk. |
+| `force_refresh: bool` | Ignores the `StateModel` (ETags) and forces a full download and load. |
+| `skip_validation: bool` | Allows data to bypass the `ValidatorClass` in emergencies or during development. |
+
+These can be integrated directly into the `ETLConfig` class:
+
+```python
+class ETLConfig(BaseSettings):
+    # ... existing settings ...
+    
+    # Global Flow Control Flags
+    dry_run: bool = False
+    force_refresh: bool = False
+    skip_validation: bool = False # Use with caution
+    
+    # Validation Strictness
+    strict_mode: bool = True 
+```
+
+### 6.3. Proposed `PipelineOrchestrator` Implementation
+
+To tie the `DownloadContext`, `Validator`, and `Manifest` together, we need a `PipelineOrchestrator`. This class acts as the "brain," using the flow control flags from `ETLConfig` and the metadata from `ETLSource` to decide which steps to execute.
+
+Following the Linux-based standalone component strategy, here is a draft for the orchestrator and its validator dependency.
+
+**1. The Orchestrator Logic**
+
+This class manages the "Happy Path" while respecting the `dry_run` and `force_refresh` flags.
+
+```python
+import logging
+from typing import Optional
+from common.config.settings import etl_settings
+from extractor.download.context import DownloadContext
+from extractor.source_probe.prober import SourceProber
+from extractor.manifest.manager import ManifestManager # Hypothetical Manifest class
+from extractor.validation.validator import ValidatorClass
+
+logger = logging.getLogger(__name__)
+
+class PipelineOrchestrator:
+    def __init__(self):
+        self.prober = SourceProber()
+        self.download_context = DownloadContext(etl_settings.raw_path)
+        self.manifest = ManifestManager(etl_settings.manifest_path)
+        self.validator = ValidatorClass()
+
+    def run_source(self, source: ETLSource) -> Optional[DownloadEvent]:
+        """Orchestrates the lifecycle of a single ETLSource."""
+        logger.info(f"Starting orchestration for: {source.source_id}")
+
+        # 1. PROBE
+        probe_result = self.prober.probe(source.connection.url)
+        if probe_result.probe_error:
+            logger.error(f"Probe failed: {probe_result.probe_error}")
+            return None
+
+        # 2. STATE CHECK (Flow Control: Skip if unchanged)
+        # Short-circuits the pipeline to prevent expensive I/O.
+        if not etl_settings.force_refresh:
+            if probe_result.etag == source.state.last_etag:
+                logger.info(f"Source {source.source_id} unchanged (ETag match). Skipping.")
+                return None
+
+        # 3. DRY RUN CHECK
+        # Dry Run protection ensures you can test prober logic without using bandwidth.
+        if etl_settings.dry_run:
+            logger.info(f"[DRY RUN] Would download {source.source_id} from {probe_result.url}")
+            return None
+
+        # 4. DOWNLOAD (Extract)
+        try:
+            download_event = self.download_context.execute_regime(probe_result)
+        except Exception as e:
+            logger.error(f"Download failed for {source.source_id}: {e}")
+            return None
+
+        # 5. VALIDATE (Test)
+        # Validation Gate protects the database from corrupt or empty data.
+        if not etl_settings.skip_validation:
+            is_valid = self.validator.validate(download_event, source.expected_format)
+            if not is_valid:
+                logger.error(f"Validation failed for {download_event.file_path}. Aborting.")
+                # Consider moving the failed file to a quarantine directory here
+                return None
+
+        # 6. UPDATE MANIFEST & STATE
+        # On Linux, ensure this update is atomic, especially if multiple pipelines
+        # could run in parallel. A small SQLite DB is better than a JSON file for this.
+        self.manifest.update(source.source_id, download_event)
+        
+        logger.info(f"Successfully processed {source.source_id}")
+        return download_event
+```
+
+**2. The Validator Class**
+
+This class performs a final "sanity check" on the filesystem to ensure the `DownloadEvent` produced a file that matches expectations.
+
+```python
+import magic
+from pathlib import Path
+
+class ValidatorClass:
+    def validate(self, event: DownloadEvent, expected_format: str) -> bool:
+        """
+        Verify the file on disk matches the expected format using magic bytes.
+        """
+        if not event.file_path.exists():
+            return False
+
+        # Perform post-download MIME check
+        actual_mime = magic.from_file(str(event.file_path), mime=True)
+        
+        # Logic: If we expected JSON, it better be text/plain or application/json
+        # This can use the Config's mime_map logic discussed earlier
+        if expected_format == "json" and "json" not in actual_mime:
+            if "text/plain" not in actual_mime: # Some servers serve JSON as text
+                return False
+        
+        # Verify hash again for absolute certainty if required,
+        # though the download regime should handle this.
+        
+        return True
+```
+
+## 7. Visualizing The Configuration Structure
 This diagram shows the primary classes discussed in this document, their fields, methods, and relationships. It illustrates how configuration is structured into nested `BaseSettings` objects and how `ETLConfig` serves as the central point of access for the application.
 
 ```mermaid
@@ -331,7 +486,7 @@ classDiagram
     ConnectionModel ..> ETLConfig : Uses for validation
 ```
 
-## 7. Final Configuration Considerations
+## 8. Final Configuration Considerations
 
 ### The `.env` Location Strategy
 In this standalone model, the `.env` file should be placed at the root of the component: `/srv/elite-dangerous-dev/pipeline/etl/.env`.
@@ -350,3 +505,32 @@ Before moving to implementation, ensure your `etl.config.json` or `.env` has key
 *   `ETL_DOWNLOADS__RAW_DIR`
 *   `ETL_DOWNLOADS__MANIFEST_DIR`
 *   `ETL_DB_CONNECTION_STRING`
+
+## 9. Implementation TODO List
+
+This section outlines the actionable engineering tasks required to implement the ETL component as designed in this document.
+
+- [ ] **1. Configuration (`ETLConfig`):**
+    - [ ] Create `etl/src/common/config/settings.py`.
+    - [ ] Implement the `ETLConfig`, `DownloadSettings`, and `NetworkSettings` classes using `pydantic-settings`.
+    - [ ] Add the flow control flags (`dry_run`, `force_refresh`, `skip_validation`) to `ETLConfig`.
+    - [ ] Create a sample `.env.example` file in the `etl/` directory.
+
+- [ ] **2. Core Components:**
+    - [ ] Implement `SourceProber` (`etl/src/extractor/source_probe/prober.py`) to inspect source URLs and return a `ProbeResult`.
+    - [ ] Implement `DownloadContext` (`etl/src/extractor/download/context.py`) with the strategy pattern for different download regimes.
+    - [ ] Implement `ValidatorClass` (`etl/src/extractor/validation/validator.py`) using `python-magic` for MIME type verification.
+    - [ ] Design and implement `ManifestManager` (`etl/src/common/manifests/manager.py`) to track `DownloadEvent` and state (e.g., `last_etag`). Start with a JSON file-based approach.
+    - [ ] Design and implement the `Loader` class, responsible for taking data from a validated file path and loading it into the database via `db_connection_string`.
+
+- [ ] **3. Orchestration:**
+    - [ ] Implement the `PipelineOrchestrator` class (`etl/src/orchestration/pipeline.py`) as drafted in this document.
+    - [ ] Create a main entrypoint (`etl/main.py`) that initializes the orchestrator, loads `ETLSource` definitions (e.g., from a JSON file), and executes `orchestrator.run_source()` for each.
+
+- [ ] **4. Dependencies and Testing:**
+    - [ ] Update `etl/requirements.txt` with all new dependencies (e.g., `pydantic`, `pydantic-settings`, `python-magic`).
+    - [ ] Write unit tests for each component (`Validator`, `Prober`, `ManifestManager`).
+    - [ ] Write integration tests for the `PipelineOrchestrator` to test the end-to-end flow with mock sources.
+
+- [ ] **5. Documentation:**
+    - [ ] Update this document with any implementation details or design changes that arise during development.
