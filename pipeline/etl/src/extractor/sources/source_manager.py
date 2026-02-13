@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 from typing import Dict, List, Union
 from pydantic import ValidationError
-from .source import ETLSource
+from .model import ETLSource
 
 class SourcesManager:
     def __init__(self, file_path: Union[str, Path]):

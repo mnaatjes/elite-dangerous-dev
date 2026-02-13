@@ -3,12 +3,13 @@ import re
 from pathlib import Path
 from typing import Dict, Type
 from .base import DownloadStrategy
-from datetime import datetime
+from datetime import datetime, timezone
 from ...common.path_manager import PathManager
 from ..source_probe.model import ProbeResult
 from .regimes.gzip import GzipRegime
-from ..sources.source import ETLSource
+from ..sources.model import ETLSource
 from ...common.config import Config
+from ..download.event import DownloadEvent
 
 class DownloadContext:
 
@@ -26,7 +27,7 @@ class DownloadContext:
         timestamp = now.strftime("%Y%m%d_%H%M%S")
         return f"{source_id}_{dataset}_{process}_{timestamp}_v{re.sub(r'\.', '-', version)}{ext}"
     
-    def execute(self, probe_result: ProbeResult, source: ETLSource, conf: Config) -> str:
+    def execute(self, probe_result: ProbeResult, source: ETLSource, conf: Config) -> DownloadEvent:
         """
         1. Selects the strategy based on the probe's MIME type.
         2. Manages the HTTP session.
@@ -52,13 +53,25 @@ class DownloadContext:
             version=conf.version,
             ext=source.full_extension
         )
-        dest_path = self.path_manager.resolve_full_path(filename)
+
+        # Ensure Directory Path Exists
+        self.path_manager.create_timestamped_dir()
+        # Create Destination Path
+        destination_path = self.path_manager.resolve_full_path(filename)
 
         # Using a shared client for the actual download
+        ts_download_started = datetime.now(timezone.utc)
         with httpx.Client(timeout=None) as client:
-            print(f"Starting {strategy.__class__.__name__} for {filename}...")
+            #print(f"Starting {strategy.__class__.__name__} for {filename}...")
             
             # The strategy handles the 'how', the Context handles the 'when'
-            sha256_hash = strategy.download(probe_result.url, dest_path, client)
-            
-            return sha256_hash
+            sha256_hash = strategy.download(probe_result.url, destination_path, client)
+
+            return DownloadEvent(
+                file_path=destination_path,
+                file_size_bytes=destination_path.stat().st_size,
+                sha256=sha256_hash,
+                ts_download_started=ts_download_started,
+                ts_download_completed=datetime.now(timezone.utc),
+                download_regime=strategy.__class__.__name__
+            )

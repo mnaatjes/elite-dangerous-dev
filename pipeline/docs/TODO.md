@@ -1,4 +1,17 @@
-## Configuration Classs
+## Validation and Versioning
+- [ ] 
+
+## DownloadCompleted Event Object
+- [x] Pydantic Baseclass obj to collect data from DownloadContext
+- [x] Update DownloadContext.execute to change output and collect properties
+
+
+## MetaData Assembler Bridge for collecting data
+
+- [ ] MetadataAssembler bridge class to collect ETLSource, Manifest, and Config data and compose it into one source
+- [ ] Take DownloadCompleted pydantic object + ETLSource, Manifest, and Config data
+
+## Configuration Class
 
 - [ ] Refactor properties and schema with pydantic
 
@@ -14,27 +27,27 @@
 
 **2. Probing Logic**
 
-- [ ] Create and Test SourceProber:
+- [x] Create and Test SourceProber:
 
-- [ ] Implement SourceProber:
+- [x] Implement SourceProber:
 
-- [ ] HEAD Request: Logic to fetch metadata without the body.
+- [x] HEAD Request: Logic to fetch metadata without the body.
 
-- [ ] Partial GET Request: Logic to request the first 1KB using the Range: bytes=0-1023 header.
+- [x] Partial GET Request: Logic to request the first 1KB using the Range: bytes=0-1023 header.
 
-- [ ] MIME Type Sniffing: Integrate python-magic to inspect the byte buffer of the sample.
+- [x] MIME Type Sniffing: Integrate python-magic to inspect the byte buffer of the sample.
 
-- [ ] Probe Method: Orchestrate the steps to return a populated ProbeResult.
+- [x] Probe Method: Orchestrate the steps to return a populated ProbeResult.
 
 **3. Download Regimes (Strategies)**
 
-- [ ] Implement GzipRegime:
+- [x] Implement GzipRegime:
 
-- [ ] Setup streaming via httpx.Client.stream.
+- [x] Setup streaming via httpx.Client.stream.
 
-- [ ] Implement on-the-fly hashlib.sha256 updates during chunk iteration.
+- [x] Implement on-the-fly hashlib.sha256 updates during chunk iteration.
 
-- [ ] Handle decompression/saving to disk.
+- [x] Handle decompression/saving to disk.
 
 - [ ] Implement JsonRegime: Tailor streaming and hash calculation for raw JSON files.
 
@@ -42,11 +55,11 @@
 
 **4. Orchestration & Integration**
 
-- [ ] Implement DownloadContext:
+- [x] Implement DownloadContext:
 
-- [ ] Strategy Map: Define the dictionary mapping MIME types (e.g., application/gzip) to their respective Regime classes.
+- [x] Strategy Map: Define the dictionary mapping MIME types (e.g., application/gzip) to their respective Regime classes.
 
-- [ ] execute_regime: Logic to select the strategy based on ProbeResult and manage the httpx.Client lifecycle.
+- [x] execute_regime: Logic to select the strategy based on ProbeResult and manage the httpx.Client lifecycle.
 
 - [ ] Manifest Integration: Create the final bridge to update the local manifest with the returned SHA-256 hash upon successful download.
 

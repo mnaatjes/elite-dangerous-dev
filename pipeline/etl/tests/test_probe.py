@@ -7,7 +7,7 @@ import json
 import httpx
 from pprint import pprint
 from pathlib import Path
-
+from typing import cast
 # --- Import Sourcecode ---
 from ..src.common.config import Config
 from ..src.common.path_manager import PathManager
@@ -15,6 +15,7 @@ from ..src.extractor.source_probe.model import ProbeResult
 from ..src.extractor.source_probe.prober import SourceProber
 from ..src.extractor.download.context import DownloadContext
 from ..src.extractor.sources.source_manager import SourcesManager
+from ..src.extractor.sources.model import ETLSource
 
 def test_probe_single(monkeypatch):
 
@@ -52,11 +53,14 @@ def test_probe_single(monkeypatch):
             path_manager=PathManager(conf.downloads.base_directory)
         )
 
-        context.execute(
+        # Execute Download
+        download_event = context.execute(
             probe_result=probe_result,
-            source=source,
+            source=cast(ETLSource, source),
             conf=conf
         )
+
+        print(download_event.to_json())
 
     except Exception as e:
         print(f"\t>> Exception!: {e}")
