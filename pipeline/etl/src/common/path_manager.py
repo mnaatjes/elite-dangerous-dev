@@ -31,7 +31,7 @@ class PathManager:
         now = datetime.now()
         return self.base_dir / now.strftime("%Y") / now.strftime("%m")
 
-    def resolve_full_path(self, filename: str, category: str = "downloads") -> Path:
+    def resolve_full_path(self, filename: str) -> Path:
         """Returns the full path for a file: base/YYYY/MM/filename.ext"""
         return self.resolve_timestamped_dir() / filename
 

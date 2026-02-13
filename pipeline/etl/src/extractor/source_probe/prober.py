@@ -53,6 +53,8 @@ class SourceProber(BaseModel):
             # TODO: Utilize value
             range_supported = res_head.headers.get("Accept-Ranges") == "bytes"
 
+            # TODO: Grab "version" property from header
+
             # --- Take Sample | Collect Response Data---
 
             mime_type = "unknown"

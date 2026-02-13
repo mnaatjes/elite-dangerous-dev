@@ -1,0 +1,26 @@
+[
+    {
+        "source_id":"spansh",
+        "source_type":"file",
+        "dataset": "systems",
+        "expected_format":"json",
+        "compression":"gzip",
+        "connection": {
+            "url":"https://downloads.spansh.co.uk/systems_1day.json.gz",
+            "method":"GET",
+            "timeout": 7200,
+            "frequency_cron":null,
+            "retry_policy": null,
+            "auth": {
+                "type":"",
+                "config":""
+            },
+            "headers":{}
+        },
+        "state": {
+            "last_etag":null,
+            "last_sha256":null,
+            "last_run":null
+        }
+    }
+]

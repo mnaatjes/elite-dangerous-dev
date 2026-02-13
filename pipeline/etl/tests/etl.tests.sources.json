@@ -5,9 +5,10 @@
         "url":"https://httpbin.org/response-headers?Digest=sha-256=:RK/0qy18MlBSVnWgjwz6lZEWjP/lF5HF9bvEF8FabDg=:"
     },
     {
-        "source_id": "spansh_systems",
+        "source_id": "spansh",
         "label": "systems_daily_gzip",
-        "url": "https://downloads.spansh.co.uk/systems_1day.json.gz"
+        "url": "https://downloads.spansh.co.uk/systems_1day.json.gz",
+        "dataset": "systems"
     },
     {
         "source_id": "nasa_meteorites",

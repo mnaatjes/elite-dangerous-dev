@@ -23,6 +23,7 @@ def test_etl(monkeypatch):
     conf_max_chunk_size = conf.downloads.max_chunk_size
     conf_ts_format      = conf.downloads.timestamp_format
 
+    # TODO: Refactor Source management and create appropriate classes
     # TODO: Determine which Class / Obj this is part of
     # Validate Downloads Path
     if not conf_downloads_dir.exists():

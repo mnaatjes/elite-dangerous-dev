@@ -1,6 +1,7 @@
 """Source Probe Testing"""
 
 # --- Import Libraries ---
+import os
 import pytest
 import json
 import httpx
@@ -13,14 +14,23 @@ from ..src.common.path_manager import PathManager
 from ..src.extractor.source_probe.model import ProbeResult
 from ..src.extractor.source_probe.prober import SourceProber
 from ..src.extractor.download.context import DownloadContext
+from ..src.extractor.sources.source_manager import SourcesManager
 
 def test_probe_single(monkeypatch):
 
     # --- Load Configurations ---
     monkeypatch.setenv("ETL_CONFIG_PATH", "etl/tests/etl.test.config.json")
     conf = Config()
-    sources = conf.load_sources()
-    source = sources[1]
+    #sources = conf.load_sources()
+
+    # --- Load Sources ---
+    monkeypatch.setenv("ETL_SOURCE_PATH", "etl/tests/etl.sources.json")
+    source_path = Path(os.getenv("ETL_SOURCE_PATH", ""))
+    if not source_path.exists():
+        raise FileNotFoundError(f"Cannot find Configuration File at {source_path}")
+
+    src_manager = SourcesManager(source_path)
+    source = src_manager.get_source("spansh")
 
     # --- Init SourceProber ---
     probe = SourceProber(
@@ -28,23 +38,25 @@ def test_probe_single(monkeypatch):
         chunk_size=conf.downloads.max_chunk_size
     )
 
-    print(source.url)
-
     # --- Probe Source ---
     try:
-        probe_result = probe.execute(url=source.url)
+        probe_result = probe.execute(url=source.connection.url)
         
         # Check for Error
         if probe_result.probe_error:
             # --- Debugging ---
             print(f"{probe_result.probe_error}")
-
+        
         # --- Init Download Context ---
         context = DownloadContext(
             path_manager=PathManager(conf.downloads.base_directory)
         )
 
-        context.execute(probe_result)
+        context.execute(
+            probe_result=probe_result,
+            source=source,
+            conf=conf
+        )
 
     except Exception as e:
         print(f"\t>> Exception!: {e}")

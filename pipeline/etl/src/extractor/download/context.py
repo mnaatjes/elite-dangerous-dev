@@ -1,10 +1,14 @@
 import httpx
+import re
 from pathlib import Path
 from typing import Dict, Type
 from .base import DownloadStrategy
+from datetime import datetime
 from ...common.path_manager import PathManager
 from ..source_probe.model import ProbeResult
 from .regimes.gzip import GzipRegime
+from ..sources.source import ETLSource
+from ...common.config import Config
 
 class DownloadContext:
 
@@ -17,7 +21,12 @@ class DownloadContext:
             "application/gzip": GzipRegime
         }
 
-    def execute(self, probe_result: ProbeResult) -> str:
+    def _generate_filename(self, source_id: str, process:str, dataset:str, version:str, ext:str) -> str:
+        now = datetime.now()
+        timestamp = now.strftime("%Y%m%d_%H%M%S")
+        return f"{source_id}_{dataset}_{process}_{timestamp}_v{re.sub(r'\.', '-', version)}{ext}"
+    
+    def execute(self, probe_result: ProbeResult, source: ETLSource, conf: Config) -> str:
         """
         1. Selects the strategy based on the probe's MIME type.
         2. Manages the HTTP session.
@@ -25,7 +34,6 @@ class DownloadContext:
 
         """
         # --- 1. Strategy Selection ---
-        print(probe_result.mime_type)
         strategy_class = self._strategy_map.get(probe_result.mime_type)
         
         # 2. Defensive Check (Double certainty for Prototyping)
@@ -36,9 +44,15 @@ class DownloadContext:
 
         # --- 2. Path Resolution (The "Where") ---
         # We resolve the path first to check it, without touching the disk yet.
-        filename = Path(probe_result.url).name
+        # TODO: Figure out how to store and where the 'process' value
+        filename = self._generate_filename(
+            source_id=source.source_id,
+            process="FULL",
+            dataset=source.dataset,
+            version=conf.version,
+            ext=source.full_extension
+        )
         dest_path = self.path_manager.resolve_full_path(filename)
-        print(dest_path)
 
         # Using a shared client for the actual download
         with httpx.Client(timeout=None) as client:
