@@ -308,6 +308,45 @@ event = DownloadEvent(
 # You can now derive metrics:
 duration = event.ts_download_completed - event.ts_download_started
 mbps = (event.file_size_bytes / 1024 / 1024) / duration.total_seconds()
+
+### 5.5. The `ConnectionModel`: Contract for Network Requests
+
+In your ETL architecture, the `ConnectionModel` serves as the contract for the network request layer.
+
+While the `ETLConfig` defines the "rules of the road" for the whole server (global timeouts, retry limits), the `ConnectionModel` defines the specific travel instructions for one particular data source. It is essentially the bridge between your high-level source definition (`ETLSource`) and the low-level HTTP client (`httpx`).
+
+#### 1. Key Responsibilities
+*   **Request Specification:** It holds everything required to initiate the HTTP handshake. Instead of passing five different arguments to your `SourceProber`, you pass the `ConnectionModel` object.
+    *   **The Destination:** `url`
+    *   **The Method:** `GET`, `POST`, or `HEAD`.
+    *   **The Identity:** `headers` (including that `User-Agent` override we discussed).
+*   **Localized Policy:** It allows you to override global settings for unique scenarios.
+    *   **Variable Timeouts:** Most files might take 30 seconds, but a massive Spansh dump might need the full 7200-second window you defined.
+    *   **Cron Scheduling:** It tracks when this specific connection should be checked via `frequency_cron`.
+
+#### 2. Interaction with other Classes
+The `ConnectionModel` sits as a child of the `ETLSource`. Here is how it fits into the flow:
+
+*   Orchestrator looks at an `ETLSource`.
+*   Orchestrator extracts the `ConnectionModel` and passes it to the `SourceProber`.
+*   `SourceProber` uses the `url` and `headers` from the model to see if the file exists.
+*   `DownloadContext` uses the `timeout` and `retry_policy` from the model to execute the actual download.
+
+#### 3. Why it’s separated from `ETLSource`
+You might wonder why these properties aren't just directly on the `ETLSource`. Separation provides **Modularity**:
+
+*   **Authentication Reuse:** By having an `auth: AuthModel` inside the `ConnectionModel`, you can easily swap between different auth strategies (API Keys, Bearer Tokens, or basic auth) without changing the core source metadata (like the dataset name or compression type).
+*   **Validation Logic:** You can run specific validation logic (like your `validate_url_protocol`) on the connection details without cluttering the model that handles file formats.
+
+#### 4. The "Passport" Analogy
+Think of it this way:
+
+*   `ETLSource` is the **Mission**: "Go get the latest Elite Dangerous Star Systems data."
+*   `ETLConfig` is the **Laws of the Land**: "You must identify yourself, and you cannot wait more than an hour for a response."
+*   `ConnectionModel` is the **Passport and Ticket**: "Here is exactly where you are going, your ID for this specific gate, and the specific time your flight leaves."
+
+#### Updated Context for your Refactor
+Since you are refactoring `ETLConfig`, the `ConnectionModel` is the primary beneficiary of the **Safety Rails** we built. It’s the class that gets "clamped" by the global `max_allowed_timeout`, ensuring that a single source record can't accidentally hang your entire Linux process for hours.
 ```
 
 ## 6. Flow Control and Orchestration

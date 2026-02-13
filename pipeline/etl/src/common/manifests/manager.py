@@ -3,7 +3,7 @@ from pydantic import ValidationError
 
 
 # --- Sourcecode ---
-from .manifest import Manifest
+from .model import Manifest
 from ..constants import ETLProcess
 
 class ManifestManager:

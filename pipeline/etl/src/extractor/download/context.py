@@ -8,7 +8,7 @@ from ...common.path_manager import PathManager
 from ..source_probe.model import ProbeResult
 from .regimes.gzip import GzipRegime
 from ..sources.model import ETLSource
-from ...common.config import Config
+from ...config.model import ETLConfig
 from ..download.event import DownloadEvent
 
 class DownloadContext:
@@ -27,7 +27,7 @@ class DownloadContext:
         timestamp = now.strftime("%Y%m%d_%H%M%S")
         return f"{source_id}_{dataset}_{process}_{timestamp}_v{re.sub(r'\.', '-', version)}{ext}"
     
-    def execute(self, probe_result: ProbeResult, source: ETLSource, conf: Config) -> DownloadEvent:
+    def execute(self, probe_result: ProbeResult, source: ETLSource, conf: ETLConfig) -> DownloadEvent:
         """
         1. Selects the strategy based on the probe's MIME type.
         2. Manages the HTTP session.

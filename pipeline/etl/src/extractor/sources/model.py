@@ -17,6 +17,7 @@ class ConnectionModel(BaseModel):
     retry_policy: Optional[Dict[str, Any]] = None
     auth: AuthModel = Field(default_factory=AuthModel)
     headers: Dict[str, str] = Field(default_factory=dict)
+    source_type: str = ""
 
     @field_validator("url")
     @classmethod
