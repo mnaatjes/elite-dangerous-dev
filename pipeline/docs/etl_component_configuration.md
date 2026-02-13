@@ -15,13 +15,7 @@ graph TD
     end
 
     subgraph "Pydantic Processing (ETLConfig Instantiation)"
-        C["etl_settings = ETLConfig()"]
-        D["1. Load Vars (System overrides .env)"]
-        E["2. Parse Nested Vars (using '__' delimiter)"]
-        F["3. Instantiate Nested Models (DownloadSettings, NetworkSettings)"]
-        G["4. Coerce Types (str -> int, Path, etc.)"]
-        H["5. Compute Fields (@computed_field)"]
-        I["6. Run Validators (@model_validator)"]
+        P["Pydantic processes environment variables and .env file to create etl_settings instance"]
     end
 
     subgraph "Output"
@@ -35,15 +29,9 @@ graph TD
         N["Set HTTP Headers (etl_settings.network.user_agent)"]
     end
 
-    A --> D
-    B --> D
-    C --> D
-    D --> E
-    E --> F
-    F --> G
-    G --> H
-    H --> I
-    I --> J
+    A --> P
+    B --> P
+    P --> J
 
     J --> K
     K --> L
