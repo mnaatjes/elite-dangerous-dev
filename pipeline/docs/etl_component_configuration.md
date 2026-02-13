@@ -39,6 +39,52 @@ graph TD
     K --> N
 ```
 
+### Proposed Directory Structure
+This tree represents the target directory structure for the standalone ETL component, based on the classes and modules discussed in this document.
+
+```
+etl/
+├── .env.example              # Example environment variables
+├── main.py                   # Main entrypoint to run the pipeline
+├── requirements.txt          # Python dependencies
+├── src/
+│   ├── __init__.py
+│   ├── common/
+│   │   ├── __init__.py
+│   │   ├── config/
+│   │   │   ├── __init__.py
+│   │   │   └── settings.py     # Defines ETLConfig, NetworkSettings
+│   │   └── manifests/
+│   │       ├── __init__.py
+│   │       └── manager.py      # Defines ManifestManager
+│   ├── extractor/
+│   │   ├── __init__.py
+│   │   ├── download/
+│   │   │   ├── __init__.py
+│   │   │   └── context.py      # Defines DownloadContext
+│   │   ├── source_probe/
+│   │   │   ├── __init__.py
+│   │   │   └── prober.py       # Defines SourceProber
+│   │   └── validation/
+│   │       ├── __init__.py
+│   │       └── validator.py    # Defines ValidatorClass
+│   ├── orchestration/
+│   │   ├── __init__.py
+│   │   └── pipeline.py     # Defines PipelineOrchestrator
+│   └── loader/
+│       ├── __init__.py
+│       └── db_loader.py      # Defines the database loading logic
+├── data/
+│   ├── manifests/              # For storing manifest files
+│   ├── raw/                    # For storing downloaded raw data
+│   └── tmp/                    # For temporary files during processing
+└── tests/
+    ├── __init__.py
+    ├── conftest.py
+    ├── test_orchestrator.py
+    └── ...                     # Unit & integration tests
+```
+
 ## 1. Core Principles
 
 ### Bounded Context Configuration
