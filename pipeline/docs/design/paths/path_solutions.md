@@ -11,11 +11,23 @@ The new `PathManager` will be designed around the following principles:
 - **Explicit is Better than Implicit:** Filesystem modifications (like creating directories or writing files) will be performed through explicit method calls, not as hidden side-effects of other operations.
 - **Abstraction:** The `PathManager` will provide a high-level API that abstracts away the details of the underlying filesystem structure. Consumers of the class will ask for "the manifest directory" or "a new download file path," not construct paths manually.
 
-## 2. Proposed `PathManager` Class Design
+## 2. Method Naming Conventions
+
+To ensure the behavior of the `PathManager` is always clear and predictable, all methods will adhere to a strict naming convention based on their function. This clarifies the distinction between methods that simply return a `Path` object and those that perform I/O operations on the filesystem.
+
+| Prefix | Action | I/O | Example |
+| :--- | :--- | :-: | :--- |
+| `get_*` | Returns a `Path` object for a directory or file. Never creates anything. | **No** | `get_root_dir()` |
+| `generate_*` | Composes and returns a new, often unique, `Path` object. Never creates it. | **No** | `generate_download_path()` |
+| `create_*` | Actively creates something on the filesystem (e.g., a directory). | **Yes** | `create_directory()` |
+| `read_*` | Reads data from a file. | **Yes** | `read_json()` |
+| `write_*` | Writes data to a file. | **Yes** | `write_json()` |
+
+## 3. Proposed `PathManager` Class Design
 
 The new `PathManager` will be a stateful service, initialized with the `ETLConfig` object. It will provide a comprehensive set of methods for managing all paths and files used by the application.
 
-### 2.1. Initialization
+### 3.1. Initialization
 
 ```python
 from pathlib import Path
@@ -30,22 +42,23 @@ class PathManager:
         if config.orchestration.testing_mode:
             self._root = self._root / "tests"
             
-        # Ensure the root directory exists
-        self._ensure_dir(self._root)
+        # The root directory is NOT created on initialization.
+        # This is the responsibility of the application's startup logic.
 
-    def _ensure_dir(self, path: Path):
-        """Ensures a directory exists, creating it if necessary."""
+    def create_directory(self, path: Path):
+        """Ensures a directory exists, creating it and any parents if necessary."""
         path.mkdir(parents=True, exist_ok=True)
 ```
 
 **Design Choices:**
 
-- **Dependency Injection:** The `PathManager` is initialized with the `ETLConfig` object, making it easy to access all configuration-defined paths. This follows the Dependency Inversion Principle.
-- **Testing Environment Handling:** The logic for adjusting the root path during testing is now centralized in the `PathManager`'s constructor.
+- **Dependency Injection:** The `PathManager` is initialized with the `ETLConfig` object, making it easy to access all configuration-defined paths.
+- **No I/O in Constructor:** The constructor does not perform any filesystem operations. It is side-effect free, making the class more predictable and easier to test.
+- **Explicit Directory Creation:** A public `create_directory()` method is provided for explicitly creating directories.
 
-### 2.2. Path Resolution Methods
+### 3.2. Path Resolution Methods (`get_*`)
 
-These methods will provide paths to the key directories used by the ETL pipeline. They will not have any side-effects (i.e., they won't create the directories).
+These methods provide paths to the key directories used by the ETL pipeline. They do not have any side-effects (i.e., they won't create the directories).
 
 ```python
     def get_root_dir(self) -> Path:
@@ -65,18 +78,21 @@ These methods will provide paths to the key directories used by the ETL pipeline
         return self._root / self.config.downloads.raw_dir
 ```
 
-### 2.3. Path and Filename Generation
+### 3.3. Path and Filename Generation (`generate_*`, `get_*`)
 
-These methods will handle the logic for creating new, unique file paths.
+These methods handle the logic for creating new, unique file paths. They strictly adhere to the "no side-effects" rule.
 
 ```python
     from datetime import datetime
     import re
 
-    def new_download_path(self, source_id: str, process: str, dataset: str, version: str, extension: str) -> Path:
+    def generate_download_path(self, source_id: str, process: str, dataset: str, version: str, extension:str) -> Path:
         """
         Generates a new, timestamped path for a downloaded file.
         Example: .../downloads/2026/02/spansh_systems_FULL_20260213_190626_v1-0.json.gz
+        
+        NOTE: This method does NOT create the directory. The caller must explicitly
+        create it using create_directory(path.parent).
         """
         now = datetime.now()
         timestamp = now.strftime("%Y%m%d_%H%M%S")
@@ -88,7 +104,6 @@ These methods will handle the logic for creating new, unique file paths.
         
         # Create path with YYYY/MM structure
         download_dir = self.get_downloads_dir() / now.strftime("%Y") / now.strftime("%m")
-        self._ensure_dir(download_dir) # Ensure the subdirectory exists
         
         return download_dir / filename
 
@@ -96,17 +111,18 @@ These methods will handle the logic for creating new, unique file paths.
         """
         Generates the path for a manifest file.
         Example: .../manifests/downloads_v1-0.json
+
+        NOTE: This method does NOT create the directory.
         """
         safe_version = re.sub(r'[^\w-]', '', version).replace('.', '-')
         filename = f"{process_name.lower()}_v{safe_version}.json"
         manifest_dir = self.get_manifests_dir()
-        self._ensure_dir(manifest_dir)
         return manifest_dir / filename
 ```
 
-### 2.4. File I/O Methods
+### 3.4. File I/O Methods
 
-These methods will encapsulate all file reading and writing operations.
+These methods encapsulate all file reading and writing operations.
 
 ```python
     import json
@@ -125,7 +141,7 @@ These methods will encapsulate all file reading and writing operations.
 
     def write_json(self, path: Path, data: any, atomic: bool = True):
         """
-        Writes data to a JSON file.
+        Writes data to a JSON file. The parent directory must exist.
         If atomic is True, uses a temporary file to prevent corruption.
         """
         if atomic:
@@ -138,16 +154,17 @@ These methods will encapsulate all file reading and writing operations.
                 json.dump(data, f, indent=4, default=str)
 ```
 
-## 3. Design Patterns
+## 4. Design Patterns
 
 - **Facade Pattern:** The `PathManager` will act as a facade, providing a simple, unified interface to the complex and varied filesystem operations required by the application.
 - **Strategy Pattern:** For file I/O, the `PathManager` could be extended to use different strategies for different file types (e.g., a `JsonStrategy`, a `GzipStrategy`). For now, we will implement the JSON methods directly.
 - **Singleton (or Application-Scoped Instance):** The `PathManager` should be instantiated once per application run and shared across all components that need it. This can be achieved by creating an instance in the main application entry point and passing it down, or by using a dependency injection container.
 
-## 4. Benefits of the New Design
+## 5. Benefits of the New Design
 
-- **Consistency:** All path and file operations will be handled in a single, consistent way.
+- **Consistency:** All path and file operations will be handled in a single, consistent way, enforced by the naming convention.
+- **Predictability:** The behavior of methods is clear from their names. There are no hidden side-effects.
 - **Robustness:** Centralizing logic makes it easier to implement error handling, logging, and features like atomic writes.
 - **Maintainability:** Changes to the directory structure or file naming conventions will only need to be made in one place.
-- **Testability:** The `PathManager` can be easily mocked or subclassed in tests to create a virtual filesystem, allowing for more robust and isolated unit tests.
+- **Testability:** The `PathManager` can be easily mocked. Because the constructor is side-effect free, it's trivial to instantiate in unit tests.
 - **Decoupling:** Application components will be decoupled from the specifics of the filesystem, making the codebase more modular and easier to refactor.
