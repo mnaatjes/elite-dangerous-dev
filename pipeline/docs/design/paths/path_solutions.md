@@ -32,6 +32,15 @@ The new `PathManager` will be a stateful service, initialized with the `ETLConfi
 ```python
 from pathlib import Path
 from etl.src.config.model import ETLConfig
+from pydantic import BaseModel, ValidationError
+from typing import Type, TypeVar
+import json
+import re
+from datetime import datetime
+
+# TypeVar allows for correct type hinting with any Pydantic model class
+T = TypeVar('T', bound=BaseModel)
+
 
 class PathManager:
     def __init__(self, config: ETLConfig):
@@ -83,9 +92,6 @@ These methods provide paths to the key directories used by the ETL pipeline. The
 These methods handle the logic for creating new, unique file paths. They strictly adhere to the "no side-effects" rule.
 
 ```python
-    from datetime import datetime
-    import re
-
     def generate_download_path(self, source_id: str, process: str, dataset: str, version: str, extension:str) -> Path:
         """
         Generates a new, timestamped path for a downloaded file.
@@ -122,13 +128,13 @@ These methods handle the logic for creating new, unique file paths. They strictl
 
 ### 3.4. File I/O Methods
 
-These methods encapsulate all file reading and writing operations.
+These methods encapsulate all file reading and writing operations, providing both low-level and high-level interfaces.
+
+#### Generic JSON I/O
 
 ```python
-    import json
-
     def read_json(self, path: Path) -> any:
-        """Reads and parses a JSON file."""
+        """Reads and parses a JSON file into a raw Python object (dict or list)."""
         try:
             with open(path, 'r') as f:
                 return json.load(f)
@@ -141,7 +147,7 @@ These methods encapsulate all file reading and writing operations.
 
     def write_json(self, path: Path, data: any, atomic: bool = True):
         """
-        Writes data to a JSON file. The parent directory must exist.
+        Writes a raw Python object to a JSON file. The parent directory must exist.
         If atomic is True, uses a temporary file to prevent corruption.
         """
         if atomic:
@@ -152,6 +158,35 @@ These methods encapsulate all file reading and writing operations.
         else:
             with open(path, 'w') as f:
                 json.dump(data, f, indent=4, default=str)
+```
+
+#### Pydantic Model I/O
+
+```python
+    def read_pydantic_model(self, path: Path, model_class: Type[T]) -> T | None:
+        """
+        Reads a JSON file and validates its contents into a Pydantic model.
+        Returns the model instance or None if the file doesn't exist.
+        Raises ValueError on validation or JSON decoding errors.
+        """
+        raw_data = self.read_json(path) # Use our existing low-level reader
+        if raw_data is None:
+            return None
+        
+        try:
+            # Pydantic handles all nested validation automatically!
+            return model_class.model_validate(raw_data)
+        except ValidationError as e:
+            raise ValueError(f"Pydantic validation failed for {path}: {e}")
+
+    def write_pydantic_model(self, path: Path, model: BaseModel, atomic: bool = True):
+        """
+        Writes a Pydantic model to a JSON file.
+        The parent directory must exist.
+        """
+        # Pydantic can dump the model to a JSON-compatible dictionary
+        data_to_write = model.model_dump(mode='json')
+        self.write_json(path, data_to_write, atomic) # Use our existing low-level writer
 ```
 
 ## 4. Design Patterns
