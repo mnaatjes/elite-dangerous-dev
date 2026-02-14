@@ -9,6 +9,7 @@ class ETLDownloadSettings(BaseModel):
     raw_dir: Path = Path("data/raw")
     destination_dir: Path = Path("data/downloads")
     manifest_dir: Path = Path("data/manifests")
+    sources_dir: Path = Path("data/sources")
     
     # Network settings specific to downloads
     user_agent: str = "Elite-Dangerous-ETL/1.0"

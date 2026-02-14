@@ -33,6 +33,9 @@ class PathManager:
 
     def get_downloads_dir(self) -> Path:
         return self._root / self.config.downloads.destination_dir
+    
+    def get_sources_dir(self) -> Path:
+        return self._root / self.config.downloads.sources_dir
 
     def get_manifests_dir(self) -> Path:
         return self._root / self.config.downloads.manifest_dir
@@ -74,6 +77,10 @@ class PathManager:
         manifest_dir = self.get_manifests_dir()
         # Return assembled path
         return manifest_dir / filename
+    
+    def generate_soures_path(self, source_type:str) -> Path:
+        print("Method: generate_sources_path() NOT FINISHED!!!")
+        return Path()
 
     # --- Creators: Make the directory or path!!!; Return None ---
 
