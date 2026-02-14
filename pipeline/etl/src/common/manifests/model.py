@@ -5,8 +5,8 @@ from pydantic import ValidationError
 from typing import Dict, Any
 # --- Enums | Constants | Classes ---
 from ..constants import ETLProcess
-from .metadata import ManifestMetadata
-from .record import ManifestRecord
+from ...manifest.metadata import ManifestMetadata
+from ...manifest.record import ManifestRecord
 
 # --- Class Implementation ----
 class Manifest:

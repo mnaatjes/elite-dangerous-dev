@@ -54,7 +54,7 @@ class PathManager:
         timestamp = now.strftime("%Y%m%d_%H%M%S")
 
         # Sanitize version string
-        safe_version = re.sub(r'[^\w-]', '', version).replace('.', '_')
+        safe_version = safe_version = version.replace('.', '_')
 
         # Assemble Filename
         filename = f"{source_id}_{dataset}_{process}_{timestamp}_v{safe_version}{extension}"
@@ -68,9 +68,9 @@ class PathManager:
     def generate_manifest_path(self, process:str, version:str) -> Path:
         """This method does NOT mkdir!"""
         # Sanitize version string
-        safe_version = re.sub(r'[^\w-]', '', version).replace('.', '_')
+        safe_version = safe_version = version.replace('.', '_')
         # Build and get props
-        filename = f"manifest_{process.lower()}_v{safe_version}.json"
+        filename = f"{process.lower()}_v{safe_version}.json"
         manifest_dir = self.get_manifests_dir()
         # Return assembled path
         return manifest_dir / filename
@@ -81,17 +81,21 @@ class PathManager:
         """Creates a Directory - if it doesn't exist"""
         path.mkdir(parents=True, exist_ok=True)
 
-    # --- TODO: CSV I/O
+    # --- TODO: CSV I/O: --- 
 
     # --- JSON I/O: Simple JSON Read/Write Methods ---
 
-    def read_json(self, path: Path) -> Any:
+    def read_json(self, path: Path, strict:bool = True) -> Any:
         """Reads and parses a JSON file into raw py object (dict or list)"""
         try:
             with open(path, "r") as f:
                 return json.load(f)
         except FileNotFoundError:
-            return None
+            # Check for strict
+            if strict:
+                return None
+            # Non-strict Mode
+            raise FileNotFoundError(f"Manifest File not found at path {path}")
         except json.JSONDecodeError as e:
             raise ValueError(f"Error decoding JSON from path {path}: {e}")
     
@@ -112,14 +116,17 @@ class PathManager:
 
     # --- Pydantic Model I/O: Reads/Writes JSON Files with Pydantic Models
 
-    def read_pydantic_model(self, path:Path, model_class: Type[T]) -> T|None:
+    def read_pydantic_model(self, path:Path, model_class: Type[T], strict:bool = True) -> T|None:
         """
         1) Reads a JSON file and validates it via Pydantic model.
         2) Returns model instance or None
         3) Raises ValueError on Validation or JSON decoding errors
+
+        Notes: 
+        - model_class: Type[T] means "any pydantic model"
         """
         # Use read_json() to get data from filepath
-        raw_data = self.read_json(path)
+        raw_data = self.read_json(path, strict)
         if raw_data is None:
             return None # file empty
         
