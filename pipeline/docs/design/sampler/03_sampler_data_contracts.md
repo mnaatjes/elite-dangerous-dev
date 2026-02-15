@@ -22,6 +22,7 @@ class FileMetadata(BaseModel):
     file_path: FilePath
     source_url: Optional[str] = None
     etag: Optional[str] = None
+    sha256: str # Added to link parent to child
     
     # Sizes
     compressed_size: int = Field(..., description="Size in bytes on disk.")
@@ -70,44 +71,37 @@ class SnifferResult(BaseModel):
     schema_hint: List[str] = Field(default_factory=list)
 ```
 
-## 3.3. `SampleMetadata` (Output)
+## 3.3. `SampleMetadata` (Output Artifact)
 
-This is the metadata file (`sample.meta.json`) that is saved alongside the `sample.json`. It provides the complete "Chain of Custody" and context for the generated sample artifact.
+This is the metadata model for the `sample.meta.json` sidecar file. It serves as the "birth certificate" for the generated sample, linking it back to its source and documenting how it was created.
 
 ```python
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from datetime import datetime
-from typing import Optional
 
 class SampleMetadata(BaseModel):
-    """The final metadata artifact for a generated sample."""
-    # Lineage and Integrity
-    parent_sha256: str = Field(..., description="The SHA256 hash of the parent raw file, linking it to the source.")
-    sample_sha256: str = Field(..., description="The SHA256 hash of the sample file itself, ensuring its integrity.")
-    
-    # Timing
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    
-    # Sampling Regime Details (How the sample was taken)
-    regime_type: str = Field(..., description="The type of sampling performed, e.g., 'head', 'random', 'systematic'.")
-    n_rows: int = Field(..., description="The number of records captured in the sample.")
-    source_offset: Optional[int] = Field(None, description="The starting position (byte or line offset) within the source file.")
-    
-    # Execution Context (What created the sample)
-    strategy_used: str = Field(..., description="The name of the strategy class used, e.g., 'GzipIJsonStrategy'.")
-    sampler_version: str = Field("1.0", description="Version of the sampler logic to track changes over time.")
+    """The sidecar metadata for a created sample."""
+    model_config = ConfigDict(frozen=True)
+
+    parent_sha256: str = Field(..., description="SHA256 of the source download")
+    sample_sha256: str = Field(..., description="SHA256 of this sample file")
+    n_rows: int
+    strategy_used: str
+    created_at: datetime = Field(default_factory=datetime.now)
+    regime: str = "head"  # e.g., head, tail, random
 ```
 
-## 3.4. `SampleOutput` (Return Value)
+## 3.4. `SampleArtifact` (Return Value)
 
-This model represents the final return value of the `SamplerManager.run()` method. It provides a clean, structured object containing the paths to the generated artifacts and their metadata.
+This model represents the final, cohesive package returned after a successful sampling run. It bundles together the paths to the created files and the rich metadata object.
 
 ```python
-from pydantic import BaseModel, FilePath
+from pydantic import BaseModel
+from pathlib import Path
 
-class SampleOutput(BaseModel):
-    """The final output of a successful sampling operation."""
-    sample_path: FilePath
-    metadata_path: FilePath
+class SampleArtifact(BaseModel):
+    """The cohesive package returned after a successful sampling run."""
+    sample_path: Path
+    meta_path: Path
     metadata: SampleMetadata
 ```

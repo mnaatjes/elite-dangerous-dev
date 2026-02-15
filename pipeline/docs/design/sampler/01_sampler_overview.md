@@ -8,23 +8,24 @@ In the context of Elite Dangerous data, source files like the Spansh galaxy dump
 
 The primary goals of the Sampler module are:
 - **Efficiency:** Avoid reading the entirety of a large file just to understand its structure.
-- **Intelligence:** Automatically detect the file's format (e.g., JSONL vs. a JSON array) and compression to apply the correct and most performant extraction strategy.
+- **Intelligence:** Automatically detect the file's format and compression to apply the correct and most performant extraction strategy.
 - **Traceability:** Create sample artifacts that are cryptographically and logically linked to their original source file, ensuring a clear "Chain of Custody."
-- **Simplicity:** Provide a simple, "one-stop-shop" interface to the rest of the ETL pipeline.
+- **Clarity & Testability:** Provide a clean, decoupled architecture where each component has a single responsibility, making the system easy to test, maintain, and extend.
 
 ## 1.2. High-Level Workflow
 
-The sampler operates as a single, cohesive unit that transforms a raw downloaded file into a useful, metadata-rich sample artifact. This process follows a clear "Chain of Custody":
+The sampler operates by coordinating several independent components under the direction of a central "Brain" or **`SamplerOrchestrator`**. This process transforms a raw downloaded file into a useful, metadata-rich sample artifact.
 
-1.  **Input:** The process begins with a raw data file (e.g., `raw.json.gz`) and its associated filesystem metadata (path, size, etc.), which is provided by the `PathManager`.
+1.  **Input:** The process begins with a raw data file and its associated `FileMetadata` (path, size, sha256, etc.), provided by the `PathManager`.
 
-2.  **Orchestration (`SamplerManager`):** A central `SamplerManager` orchestrates the entire process in one atomic operation.
-    - It first uses an internal **Sniffer** to perform a deep inspection of the file's initial bytes to determine its true structure and format.
-    - Based on the file's metadata and the sniffer's findings, an internal **Factory** selects the appropriate `SamplingStrategy` (e.g., a line-by-line reader for JSONL, or a streaming parser for a large JSON array).
-    - The chosen strategy is executed to read and extract a small number of records from the source file.
+2.  **Orchestration (`SamplerOrchestrator`):** The `SamplerOrchestrator` manages the workflow by delegating to specialized components:
+    - It uses a **Sniffer** to perform a deep inspection of the file's contents.
+    - It passes the file metadata and sniffer results to a **`SamplerFactory`**, which selects the appropriate `SamplingStrategy`.
+    - The chosen `Strategy` is executed to read and extract a small number of records from the source file.
+    - The extracted data and parent metadata are handed off to an **`ArtifactManager`**.
 
-3.  **Output:** The process generates two key artifacts:
+3.  **Output (`ArtifactManager`):** The `ArtifactManager` handles all I/O, creating the two final artifacts on the filesystem:
     - `sample.json`: A small, uncompressed file containing the sampled records.
-    - `sample.meta.json`: A metadata file detailing *how* the sample was created (which strategy was used, how many rows were taken) and linking it back to its parent source file via a cryptographic hash.
+    - `sample.meta.json`: A metadata file detailing *how* the sample was created and linking it back to its parent source file via its SHA256 hash.
 
-This entire workflow is encapsulated within the `SamplerManager`, ensuring that from the pipeline's perspective, sampling is a simple, reliable, and single command.
+This decoupled workflow, managed by the orchestrator, ensures that each part of the process is independent, testable, and robust.
