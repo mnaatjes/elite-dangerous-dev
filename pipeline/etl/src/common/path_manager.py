@@ -6,8 +6,8 @@ from typing import Type, TypeVar, Any
 from pydantic import BaseModel, ValidationError, TypeAdapter
 
 # --- Source Code ---
-from etl.src.config import orchestration
-from ..config.model import ETLConfig
+from etl.src.config.models import orchestration
+from ..config.models.config import ETLConfig
 
 # --- TypeVar Declarations ---
 T = TypeVar("T", bound=BaseModel)

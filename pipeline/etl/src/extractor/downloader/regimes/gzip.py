@@ -2,7 +2,7 @@ import httpx
 import hashlib
 from pathlib import Path
 
-from ..base import DownloadStrategy
+from ..models.base import DownloadStrategy
 
 class GzipRegime(DownloadStrategy):
     def download(self, url: str, destination: Path, client: httpx.Client) -> str:

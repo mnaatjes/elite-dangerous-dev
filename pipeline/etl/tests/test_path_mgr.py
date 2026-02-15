@@ -1,7 +1,7 @@
 import pytest
 import os
 from datetime import datetime, timezone
-from ..src.config.model import ETLConfig
+from ..src.config.models.config import ETLConfig
 from ..src.manifest.manager import ManifestManager
 from ..src.common.path_manager import PathManager
 from ..src.manifest.models.record import Record as ManifestRecord

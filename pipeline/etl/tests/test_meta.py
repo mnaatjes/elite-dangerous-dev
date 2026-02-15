@@ -5,7 +5,7 @@ from pathlib import Path
 from ..src.common.path_manager import PathManager
 from ..src.common.metadata.repository import MetadataRepository
 from ..src.common.metadata.factory import MetadataFactory
-from ..src.config.model import ETLConfig
+from ..src.config.models.config import ETLConfig
 
 
 

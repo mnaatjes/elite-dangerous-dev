@@ -13,7 +13,7 @@ from .orchestration import ETLOrchestrationSettings
 # >> Move up from settings.py -> config -> src -> etl root
 COMPONENT_ROOT = Path(__file__).resolve().parents[2]
 
-class ETLConfig(BaseSettings):
+class Config(BaseSettings):
     # --- Find '.env' file relative to this component ---
     model_config = SettingsConfigDict(
         env_file=Path(COMPONENT_ROOT / ".env"),

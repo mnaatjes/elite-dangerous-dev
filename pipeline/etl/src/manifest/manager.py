@@ -10,8 +10,8 @@ from .models.metadata import Metadata as ManifestMeta
 # --- Services and Models ---
 from ..extractor.http_sources.model import Source as ETLSource
 from ..common.path_manager import PathManager
-from ..config.model import ETLConfig
-from ..extractor.download.event import DownloadEvent
+from ..config.models.config import ETLConfig
+from ..extractor.downloader.models.event import DownloadEvent
 
 class ManifestManager:
     def __init__(self, path_manager:PathManager, config:ETLConfig) -> None:

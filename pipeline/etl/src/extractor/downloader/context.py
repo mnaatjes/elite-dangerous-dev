@@ -2,14 +2,15 @@ import httpx
 import re
 from pathlib import Path
 from typing import Dict, Type
-from .base import DownloadStrategy
+from .models.base import DownloadStrategy
 from datetime import datetime, timezone
 from ...common.path_manager import PathManager
 from ..source_probe.model import ProbeResult
 from .regimes.gzip import GzipRegime
-from ..sources.model import ETLSource
-from ...config.model import ETLConfig
-from ..download.event import DownloadEvent
+from ..http_sources.model import Source as ETLSource
+from ..http_sources.manager import SourcesManager
+from ...config.models.config import ETLConfig
+from .models.event import DownloadEvent
 
 class DownloadContext:
 
