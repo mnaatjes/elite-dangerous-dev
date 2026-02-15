@@ -2,10 +2,21 @@
 
 This document serves as a single source of truth for the data structures and contracts used throughout the Sampler module. Using Pydantic models ensures that data is validated and that the shape of the data is explicit and consistent between components.
 
-## 3.1. `FileMetadata` (Input)
+## 3.1. `FileMetadata` (Input Contract)
 
-This model represents the initial, high-level metadata provided by an external component like the `PathManager`. It contains basic information about the file on the filesystem.
+This model represents the input contract for the entire Sampler module. It defines the metadata that the module expects to receive from an upstream component (like a `PathManager` or `Downloader`) for each raw file to be processed.
 
+The `SamplerOrchestrator` requires the following properties:
+-   `file_path`: The local path to the downloaded file.
+-   `sha256`: The SHA256 hash of the file, which is used as the primary key for lineage.
+-   `compression`: The type of compression detected or assumed (e.g., `GZIP`, `NONE`).
+-   `source_url`: (Optional) The original URL the file was downloaded from.
+-   `etag`: (Optional) The ETag from the download response, for caching logic.
+-   `compressed_size`: The file's size on disk in bytes.
+-   `uncompressed_size_estimate`: The estimated size of the file after decompression.
+-   `downloaded_at`: The timestamp of the download.
+
+### Pydantic Model Definition
 ```python
 from datetime import datetime
 from enum import Enum
@@ -22,7 +33,7 @@ class FileMetadata(BaseModel):
     file_path: FilePath
     source_url: Optional[str] = None
     etag: Optional[str] = None
-    sha256: str # Added to link parent to child
+    sha256: str # Used as the primary key to link parent to child
     
     # Sizes
     compressed_size: int = Field(..., description="Size in bytes on disk.")
