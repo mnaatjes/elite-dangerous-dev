@@ -60,7 +60,7 @@ class PathManager:
         safe_version = safe_version = version.replace('.', '_')
 
         # Assemble Filename
-        filename = f"{source_id}_{dataset}_{process}_{timestamp}_v{safe_version}{extension}"
+        filename = f"{source_id}_{dataset}_{process}_{timestamp}_v{safe_version}.{extension}"
         
         # Generate full directory path
         download_dir = self.get_downloads_dir() / now.strftime("%Y") / now.strftime("%m")
@@ -81,6 +81,21 @@ class PathManager:
     def generate_soures_path(self, source_type:str) -> Path:
         print("Method: generate_sources_path() NOT FINISHED!!!")
         return Path()
+    
+    def generate_metadata_path(self, resource_path:str|Path)-> Path:
+        # Ensure Path obj
+        if not isinstance(resource_path, Path):
+            resource_path = Path(resource_path)
+
+        # Capture Directory Path and Filename
+        directory_path = resource_path.parent
+        # Grab filepath and remove extension
+        resource_filename = resource_path.name
+        filename = self.get_deep_stem(Path(resource_filename))
+
+        # Return full path
+        return Path(directory_path / f"meta_{filename}.json")
+
 
     # --- Creators: Make the directory or path!!!; Return None ---
 
@@ -155,3 +170,18 @@ class PathManager:
         data = model.model_dump(mode="json")
         self.write_json(path, data, atomic)
 
+
+    # --- Helper Methods ---
+    def get_deep_stem(self, file_path: Path) -> str:
+        """
+        Recursively removes all extensions from a Path object.
+        Example: 'etl/data/some_file.json.gz' -> 'some_file'
+        """
+        # Start with the filename (e.g., 'some_file.json.gz')
+        temp_path = Path(file_path.name)
+        
+        # Keep stripping the suffix until none are left
+        while temp_path.suffix:
+            temp_path = temp_path.with_suffix('')
+            
+        return str(temp_path)

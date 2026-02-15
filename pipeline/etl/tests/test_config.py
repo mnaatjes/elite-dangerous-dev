@@ -5,8 +5,8 @@ from pathlib import Path
 
 # --- Sourcecode ---
 from ..src.config.model import ETLConfig
-from ..src.extractor.sources.manager import SourcesManager
-from ..src.common.manifests.manager import ManifestManager
+from ..src.extractor.http_sources.manager import SourcesManager
+from ..src.common.__manifests.manager import ManifestManager
 from ..src.extractor.source_probe.prober import SourceProber
 from ..src.extractor.download.context import DownloadContext
 from ..src.extractor.download.event import DownloadEvent

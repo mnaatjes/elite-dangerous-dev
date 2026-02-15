@@ -1,14 +1,15 @@
 from typing import Optional, Type, TypeVar, TypedDict, Dict, Any
 from typing_extensions import Unpack
 from pydantic import BaseModel
-
+from pathlib import Path
+from datetime import datetime
 # --- Import: Metadata Models ---
 from .models.abstract import Metadata
 from .models.download import DownloadMetadata
-
-
-#
-T = TypeVar('T', bound=BaseModel)
+from .models.sample import SampleMetadata
+# --- Import: Metadata Params ---
+from .types.download import DownloadParams
+from .types.sample import SampleParams
 
 class MetadataFactory:
     """
@@ -16,21 +17,38 @@ class MetadataFactory:
     """
     # Model Class Registry
     _model_registry = {
-        "downloads": DownloadMetadata
+        "downloads": DownloadMetadata,
+        "sample": SampleMetadata
     }
 
     @classmethod
-    def _create(cls, model_key, data: Dict[str, Any]) -> Metadata:
-        # Capture model key
+    def _create(cls, model_key: str, **data: Any) -> Metadata:
+        """
+        Internal dispatcher to instantiate models from the registry.
+        """
+        # 1. Retrieve the class from the registry
         model_type = cls._model_registry.get(model_key)
-        # Validate 
+        
+        # 2. Safety check
         if not model_type:
             raise ValueError(f"Unknown Metadata model: {model_key}")
+        
+        # Optional: Auto-resolve paths if provided
+        if "filepath" in data and isinstance(data["filepath"], Path):
+            data["filepath"] = data["filepath"].resolve()
 
-        # Return Validated
+        # 3. Instantiate and return
+        # Since 'data' is a dict of the kwargs, we unpack it back into the constructor
         return model_type(**data)
 
     @classmethod
-    def create_downloads(cls, **properties: DownloadMetadata) -> Metadata:
-
-        return cls._create("downloads", properties)
+    def create_download(cls, **properties: Unpack[DownloadParams]) -> Metadata:
+        # Filter Nones to allow Pydantic's default_factory to run
+        clean_props = {k: v for k, v in properties.items() if v is not None}
+        return cls._create("downloads", **clean_props)
+    
+    @classmethod
+    def create_sample(cls, **properties: Unpack[SampleParams]) -> Metadata:
+        # Filter Nones to allow Pydantic's default_factory to run
+        clean_props = {k: v for k, v in properties.items() if v is not None}
+        return cls._create("sample", **clean_props)

@@ -1,12 +1,17 @@
 
+# --- Libraries ---
 from pathlib import Path
-from .metadata import Metadata as ManifestMeta
-from .record import Record as ManifestRecord
+
+# --- Metadata Models ---
+from .models.manifest import Manifest
+from .models.record import Record as ManifestRecord
+from .models.metadata import Metadata as ManifestMeta
+
+# --- Services and Models ---
+from ..extractor.http_sources.model import Source as ETLSource
 from ..common.path_manager import PathManager
 from ..config.model import ETLConfig
-from ..manifest.model import Manifest
 from ..extractor.download.event import DownloadEvent
-from ..extractor.sources.model import ETLSource
 
 class ManifestManager:
     def __init__(self, path_manager:PathManager, config:ETLConfig) -> None:
