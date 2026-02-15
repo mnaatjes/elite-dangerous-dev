@@ -1,9 +1,47 @@
-# Git Ignore
-data/
-galaxy-spatial/
-sandbox/
-third_party/
+# --- Python / Environment ---
+# Covers both the root venv and the one in pipeline/
+venv/
+pipeline/venv/
+.venv/
+ENV/
 
-# Python ETL Pipeline
-pipeline/etl/venv/
-pipeline/etl/output/
+# --- Python Cache & Compiled Files ---
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.tox/
+.nox/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# --- ETL & Local Data (Don't push your raw Elite data!) ---
+# This prevents your local processing files from hitting GitHub
+pipeline/etl/raw/
+pipeline/etl/tmp/
+pipeline/etl/manifest/
+*.log
+
+# --- Local Configuration ---
+.env
+.env.*
+!.env.example  # Keep the example file so others know what keys to use
+
+# --- Linux & IDE System Files ---
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*~
+--oneline --graph  # Deleting the accidental file we discussed
+
+# Python bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+
+# --- C++ Libraries ---
+third_party/
+data/
