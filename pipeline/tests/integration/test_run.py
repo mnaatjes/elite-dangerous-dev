@@ -22,14 +22,21 @@ def test_workflow():
 
     meta.register_download(
         content_sha256="e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-        file_path=Path(),
-        version="",
-        pipeline="",
-        service="",
-        created_at=datetime.now(timezone.utc),
-        source_url="",
+        file_path=pm.generate_download_path(
+            source="downloads",
+            dataset="systems",
+            timestamp=datetime.now().strftime("%H%m%d_%H%I%S"),
+            version=settings.version,
+            service="extractor",
+            extension="json.gz"
+        ),
+        version="0.3",
+        pipeline="extractor",
+        service="download",
+        created_at=datetime.now().strftime("%Y%m%d_%H%I%S"),
+        source_url="http://spansh.co.uk",
         source_name="edsm",
-        dataset="",
+        dataset="systems",
         mime_type="",
         compressed_size=1024,
         compression_type=None,

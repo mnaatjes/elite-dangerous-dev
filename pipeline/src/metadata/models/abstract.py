@@ -1,7 +1,7 @@
 from pydantic import BaseModel, Field, ConfigDict
 from abc import ABC
-from typing import Optional
-from datetime import datetime, timezone
+from typing import Optional, Union
+from datetime import datetime
 from pathlib import Path
 
 class Metadata(ABC,BaseModel):
@@ -19,8 +19,6 @@ class Metadata(ABC,BaseModel):
     version: str
     pipeline: str
     service: str
-    created_at: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc)
-    )
+    created_at: Union[datetime, str]
     # --- Optional ---
     parent_sha256:Optional[str] = None

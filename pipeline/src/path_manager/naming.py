@@ -17,10 +17,6 @@ class NamingService:
         if not template:
             raise KeyError(f"No naming template found for: {template_key}")
 
-        # Automatically inject the current date if not provided
-        if "date" not in kwargs:
-            kwargs["timestamp"] = datetime.now().strftime(self.ts_format)
-
         # Sanitize version string
         if "version" in kwargs:
             kwargs["version" ] = kwargs["version"].replace('.', '_')

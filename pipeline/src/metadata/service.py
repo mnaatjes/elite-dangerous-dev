@@ -10,8 +10,12 @@ class MetadataService:
         self._settings = settings
         self._repo = MetadataRepository(path_manager)
 
-    def register_download(self, **kwargs:Unpack[DownloadParams]) -> None:
+    def register_download(self, **kwargs:Unpack[DownloadParams]) -> Path:
         """High-level method provided by service for generating download metadata file"""
+
         # Assign as single object
+        # Pydantic performs validation
         metadata = DownloadMetadata(**kwargs)
-        self._repo.save(metadata)
+
+        # Save method returns PathPr
+        return self._repo.save(metadata)

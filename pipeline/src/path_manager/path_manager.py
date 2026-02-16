@@ -83,7 +83,12 @@ class PathManager:
     def generate_metadata_path(self, source_path:Path, **kwargs: Unpack[MetadataArgs]) -> Path:
         # Get filename from naming service
         filename = self.naming.generate("metadata", **kwargs)
-        return Path( source_path / filename)
+        
+        # Extract name and remove extensions from source_path
+        dir_path = Path(source_path.parent)
+        
+        # Return completed filepath
+        return Path( dir_path / filename)
     
     def generate_log_path(self, **kwargs: Unpack[LogArgs]) -> Path:
         # Get filename from naming service
@@ -98,7 +103,6 @@ class PathManager:
         # Get timestamp for <year>/<mo>/ sub directories
         now = datetime.now()
         dir_path = self.get_samples_dir() / now.strftime("%Y") / now.strftime("%m")
-
         # Return Completed Filepath
         return Path( dir_path / filename)
 
@@ -107,6 +111,12 @@ class PathManager:
     def create_directory(self, path: Path) -> None:
         """Creates a Directory - if it doesn't exist"""
         path.mkdir(parents=True, exist_ok=True)
+
+    def ensure_dir_path(self, path:Path) -> None:
+        dir_path = path.parent
+        
+        if not dir_path.exists():
+            dir_path.mkdir(parents=True, exist_ok=True)
 
     # --- JSON I/O: Simple JSON Read/Write Methods ---
 

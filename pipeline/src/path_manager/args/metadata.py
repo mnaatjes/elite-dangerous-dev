@@ -6,4 +6,3 @@ class MetadataArgs(TypedDict):
     dataset:str
     timestamp:str
     version:str
-    extension:str
