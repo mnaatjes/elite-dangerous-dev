@@ -1,11 +1,12 @@
 # --- Libraries ---
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, timezone
 from pprint import pprint
 
 # --- Packages ---
 from src.config import settings
 from src.path_manager import PathManager, NamingService
+from src.metadata import MetadataService, DownloadMetadata
 
 def test_workflow():
     # Settings Initialized
@@ -14,43 +15,25 @@ def test_workflow():
     naming_srv = NamingService()
 
     #  --- Create pathManager Instance ---
-    pm = PathManager(settings,naming_srv)
+    pm = PathManager(settings, naming_srv)
 
+    # --- Initialize Metadata Service ---
+    meta = MetadataService(settings, pm)
+
+    meta.register_download(
+        content_sha256="e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        file_path=Path(),
+        version="",
+        pipeline="",
+        service="",
+        created_at=datetime.now(timezone.utc),
+        source_url="",
+        source_name="",
+        dataset="",
+        mime_type="",
+        compressed_size=1024,
+        compression_type=None,
+        is_valid=True
+    )
     
 
-def __test_filepath_nameing_service_write_read():
-    # Settings Initialized
-    
-    # --- Init Naming Dependency for Path Manager ---
-    naming_srv = NamingService()
-
-    #  --- Create pathManager Instance ---
-    pm = PathManager(settings,naming_srv)
-
-    file_path = pm.generate_download_path(
-        source="edsm",
-        service="extractor",
-        dataset="systems",
-        timestamp="",
-        version="0.1",
-        extension=".json.gz"
-    )
-
-    pm.create_directory(file_path.parent)
-    pm.write_json(
-        path=file_path,
-        data={
-            "name":"gemini",
-            "age":2,
-            "color":"brownish"
-        },
-    )
-
-    print(pm.read_json(file_path))
-
-
-def __test_path_resolution():
-    # Inject the fake settings
-    pm = PathManager(settings, NamingService())
-    print(pm.get_downloads_dir())
-    assert str(pm.get_downloads_dir()) == "/srv/elite-dangerous-dev/pipeline/tests/data/downloads"
