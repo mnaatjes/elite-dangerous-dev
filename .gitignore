@@ -5,8 +5,8 @@ pipeline/venv/
 .venv/
 ENV/
 data/
-data
-.data/
+**/data/
+
 
 # --- Python Cache & Compiled Files ---
 __pycache__/
