@@ -7,6 +7,7 @@ from pprint import pprint
 from src.config import settings
 from src.path_manager import PathManager, NamingService
 from src.metadata import MetadataService, DownloadMetadata
+from src.manifest import ManifestService
 
 def test_workflow():
     # Settings Initialized
@@ -20,4 +21,5 @@ def test_workflow():
     # --- Initialize Metadata Service ---
     meta = MetadataService(settings, pm)
     
-
+    # --- Instantiate Manifest Service ---
+    
