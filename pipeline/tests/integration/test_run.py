@@ -28,7 +28,7 @@ def test_workflow():
         service="",
         created_at=datetime.now(timezone.utc),
         source_url="",
-        source_name="",
+        source_name="edsm",
         dataset="",
         mime_type="",
         compressed_size=1024,
