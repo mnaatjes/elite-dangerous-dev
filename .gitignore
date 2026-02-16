@@ -4,6 +4,9 @@ venv/
 pipeline/venv/
 .venv/
 ENV/
+data/
+data
+.data/
 
 # --- Python Cache & Compiled Files ---
 __pycache__/
@@ -44,4 +47,3 @@ __pycache__/
 
 # --- C++ Libraries ---
 third_party/
-data/
