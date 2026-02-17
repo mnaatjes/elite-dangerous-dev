@@ -8,9 +8,8 @@ from .models import Record, Manifest, Headers
 
 class ManifestRepository:
 
-    def __init__(self, path_manager:PathManager, manifest_type) -> None:
+    def __init__(self, path_manager:PathManager) -> None:
         self._pm = path_manager
-        self.manifest_type = manifest_type
 
     def create(self) -> Path:
         return Path()
