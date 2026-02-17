@@ -14,22 +14,10 @@ class PersistenceFactory(ABC):
         1. Serializers
         2. Integrity Strategies
         3. Adapters
+    - Can act as a Knowledge Broker
+        * Keeps a strategy_map in some implementations
     
     """
-    def __init__(self, root:str|Path) -> None:
-        # Define Root location
-        self._root = root
-    
-    @property
-    @abstractmethod
-    def root(self) -> Union[str, Path]:
-        """
-        The universal entry point for the storage medium.
-        In local: The root directory; returns Path()
-        In DB: The connection URI; returns str URI
-        """
-        return self._root
-    
     @property
     @abstractmethod
     def supported_formats(self) -> List[str]:

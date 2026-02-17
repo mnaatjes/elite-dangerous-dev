@@ -1,241 +1,179 @@
 # Persistence Layer Implementation Example
 
-This document provides a complete, end-to-end Python implementation of the modular persistence layer, demonstrating the Factory, Orchestrator, Repository, and Strategy patterns working together.
+This document provides a complete, end-to-end Python implementation of the modular persistence layer, demonstrating how the final, decoupled patterns work together.
 
-## 1. The Adapter Layer (Micro)
+This example reflects the "clean" architecture where responsibilities are strictly separated:
+-   **Adapters** handle infrastructure I/O.
+-   **Strategies** handle interchangeable algorithms (serialization, integrity).
+-   **Resolvers** handle the logic of selecting which strategies to use.
+-   **Factories** handle the assembly of components.
+-   **Orchestrators** execute the high-level workflow.
 
-The `FilesystemAdapter` is responsible for pure I/O operations, encapsulating the raw interaction with the underlying file system.
+## 1. The Interface Layer (The Contracts)
+
+These abstract base classes define the "rules" for the entire persistence system. They ensure that components are swappable.
 
 ```python
-# src/filesystem/adapter.py
+# persistence/interfaces/models.py
+from typing import NamedTuple, Any, Union
+from abc import ABC, abstractmethod
+
+class SerializerStrategy(ABC):
+    @abstractmethod
+    def serialize(self, data: Any) -> Union[str, bytes]: pass
+    @abstractmethod
+    def deserialize(self, payload: Union[str, bytes]) -> Any: pass
+
+class IntegrityStrategy(ABC):
+    @abstractmethod
+    def calculate(self, payload: Union[str, bytes]) -> str: pass
+    @abstractmethod
+    def validate(self, payload: Union[str, bytes], expected: str) -> bool: pass
+
+class PersistenceProfile(NamedTuple):
+    serializer: SerializerStrategy
+    integrity: IntegrityStrategy
+
+class AbstractStrategyResolver(ABC):
+    @abstractmethod
+    def resolve(self, target: str) -> PersistenceProfile: pass
+
+class AbstractAdapter(ABC):
+    @abstractmethod
+    def write(self, target: str, payload: Union[str, bytes]) -> None: pass
+    @abstractmethod
+    def exists(self, target: str) -> bool: pass
+```
+
+## 2. The Implementation Layer (The Concrete Tools)
+
+This is where the specific logic for a Linux environment and JSON files lives.
+
+```python
+# persistence/resolvers/extension.py
 import os
-from typing import Generator
 
-class FilesystemAdapter:
-    def write_bytes(self, path: str, data: bytes):
-        """Writes raw bytes to a file."""
-        with open(path, "wb") as f:
-            f.write(data)
+class ExtensionStrategyResolver(AbstractStrategyResolver):
+    def __init__(self, profiles: dict[str, PersistenceProfile], default: PersistenceProfile):
+        self._profiles = profiles
+        self._default = default
 
-    def read_bytes_chunked(self, path: str, chunk_size: int = 4096) -> Generator[bytes, None, None]:
-        """Reads bytes from a file in chunks."""
-        with open(path, "rb") as f:
-            while chunk := f.read(chunk_size):
-                yield chunk
+    def resolve(self, target: str) -> PersistenceProfile:
+        _, ext = os.path.splitext(target.lower())
+        return self._profiles.get(ext, self._default)
 
-    def move(self, src: str, dst: str):
-        """Atomically renames/moves a file."""
-        os.replace(src, dst)
+# filesystem/adapters/filesystem.py (Simplified)
+class FilesystemAdapter(AbstractAdapter):
+    def __init__(self, registry):
+        self._registry = registry
 
-    def exists(self, path: str) -> bool:
-        """Checks if a file or directory exists."""
-        return os.path.exists(path)
+    def resolve(self, target: str):
+        key, sub = target.lstrip("/").split("/", 1) if "/" in target else (target, "")
+        return self._registry.get_anchor(key) / sub
+
+    def write(self, target, payload):
+        path = self.resolve(target)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        if isinstance(payload, bytes): path.write_bytes(payload)
+        else: path.write_text(payload, encoding='utf-8')
 ```
 
-## 2. The Persistence Layer (Meso)
+## 3. The Meso Layer (Orchestrator & Factory)
 
-This layer orchestrates serialization, integrity checks, and atomic writes using various strategies.
+These components coordinate the workflow and assemble the parts.
 
-### Abstract Base Classes (Interfaces)
+### The Orchestrator (The Executor)
 
-These are defined in `src/persistence/integrity/base.py` and `src/persistence/serialization/base.py` as shown in the main design document.
-
-### Concrete Strategy Implementations
-
-#### Integrity Strategies
+The "Brain" that manages the workflow but knows nothing about Linux paths or file formats.
 
 ```python
-# src/persistence/integrity/sha256.py
-import hashlib
-from typing import Generator
-from .base import IntegrityStrategy
-
-class SHA256Strategy(IntegrityStrategy):
-    def calculate(self, byte_generator: Generator[bytes, None, None]) -> str:
-        hasher = hashlib.sha256()
-        for chunk in byte_generator:
-            hasher.update(chunk)
-        return hasher.hexdigest()
-
-    @property
-    def algorithm_name(self) -> str:
-        return "SHA-256"
-```
-
-#### Serialization Strategies
-
-```python
-# src/persistence/serialization/json_ser.py
-import json
-from typing import Any
-from .base import SerializerStrategy
-
-class JsonSerializer(SerializerStrategy):
-    def serialize(self, data: Any) -> str:
-        return json.dumps(data, indent=4)
-    
-    def deserialize(self, data_str: str) -> Any:
-        return json.loads(data_str)
-
-    @property
-    def format_extension(self) -> str:
-        return ".json"
-```
-
-### The Persistence Orchestrator (Meso Brain)
-
-This class uses Composition to combine the different sub-services.
-
-```python
-# src/persistence/orchestrator.py
-from typing import Any
-from ..filesystem.adapter import FilesystemAdapter
-from .integrity.base import IntegrityStrategy
-from .serialization.base import SerializerStrategy
-
+# persistence/orchestrator.py
 class PersistenceOrchestrator:
-    def __init__(
-        self, 
-        adapter: FilesystemAdapter, 
-        integrity: IntegrityStrategy, 
-        serializer: SerializerStrategy
-    ):
-        self.adapter = adapter
-        self.integrity = integrity
-        self.serializer = serializer
+    def __init__(self, adapter: AbstractAdapter, profile: PersistenceProfile):
+        self._adapter = adapter
+        self._serializer = profile.serializer
+        self._integrity = profile.integrity
 
-    def save_atomic(self, path: str, data: Any) -> dict:
-        # 1. Transform: Logic belonging to Serialization Strategy
-        content_str = self.serializer.serialize(data)
-        content_bytes = content_str.encode('utf-8')
-
-        # 2. Audit: Logic belonging to Integrity Strategy
-        def chunk_gen(): yield content_bytes
-        checksum = self.integrity.calculate(chunk_gen())
-
-        # 3. I/O: Logic belonging to the Adapter (Infrastructure)
-        temp_path = f"{path}.tmp"
-        self.adapter.write_bytes(temp_path, content_bytes)
-        
-        # Atomic swap via the Adapter/OS
-        self.adapter.move(temp_path, path)
-
-        return {"checksum": checksum, "size": len(content_bytes)}
+    def save(self, target: str, data: Any) -> str:
+        payload = self._serializer.serialize(data)
+        checksum = self._integrity.calculate(payload)
+        self._adapter.write(target, payload)
+        return checksum
 ```
 
-### The Persistence Factory
+### The Factory (The Assembler)
 
-The Factory acts as the "Assembly Line" for the Persistence Layer.
+The "Knowledge Broker" that ties the Resolver and Adapter together.
 
 ```python
-# src/persistence/factory.py
+# persistence/factories/local.py
+class LocalPersistenceFactory:
+    def __init__(self, adapter: AbstractAdapter, resolver: AbstractStrategyResolver):
+        self._adapter = adapter
+        self._resolver = resolver
+
+    def get_orchestrator(self, target: str) -> PersistenceOrchestrator:
+        profile = self._resolver.resolve(target)
+        return PersistenceOrchestrator(self._adapter, profile)
+```
+
+## 4. The Bootstrap Layer (Wiring It All Together)
+
+This script acts as the "God Object" during startup, performing dependency injection to wire the Micro, Meso, and Macro layers together.
+
+```python
+# bootstrap.py or main.py
 import os
-from typing import Dict, Type
-from ..filesystem.adapter import FilesystemAdapter
-from .orchestrator import PersistenceOrchestrator
-from .integrity.base import IntegrityStrategy
-from .integrity.sha256 import SHA256Strategy
-from .integrity.md5 import MD5Strategy
-from .serialization.base import SerializerStrategy
-from .serialization.json_ser import JsonSerializer
-from .serialization.csv_ser import CsvSerializer
+from pathlib import Path
 
-class PersistenceFactory:
-    def __init__(self, filesystem_adapter: FilesystemAdapter):
-        self.adapter = filesystem_adapter
-        
-        self._serializer_map: Dict[str, SerializerStrategy] = {
-            ".json": JsonSerializer(),
-            ".csv": CsvSerializer(),
-        }
-        
-        self._integrity_map: Dict[str, IntegrityStrategy] = {
-            "high": SHA256Strategy(),
-            "fast": MD5Strategy(),
-        }
+# --- Import components from the project ---
+# (Assuming a simplified structure for clarity)
+from filesystem.registry import FilesystemRegistry
+# from filesystem.adapters.filesystem import FilesystemAdapter
+# from persistence.interfaces.models import PersistenceProfile
+# from persistence.resolvers.extension import ExtensionStrategyResolver
+# from persistence.factories.local import LocalPersistenceFactory
+# from persistence.serialization.json import JsonSerializer
+# from persistence.integrity.sha256 import Sha256Integrity
 
-    def get_orchestrator(self, filename: str, security_level: str = "high") -> PersistenceOrchestrator:
-        _, ext = os.path.splitext(filename.lower())
-        serializer = self._serializer_map.get(ext)
-        
-        if not serializer:
-            raise ValueError(f"No serialization strategy found for: {ext}")
-
-        integrity = self._integrity_map.get(security_level)
-        if not integrity:
-            raise ValueError(f"Invalid security level specified: {security_level}")
-
-        return PersistenceOrchestrator(
-            adapter=self.adapter,
-            integrity=integrity,
-            serializer=serializer
-        )
-```
-
-## 3. The User Access Layer (Macro)
-
-The `ManifestRepository` interacts with the persistence factory to save its data.
-
-```python
-# src/manifest/repository.py
-from ..persistence.factory import PersistenceFactory
-
-class ManifestRepository:
-    def __init__(self, persistence_factory: PersistenceFactory, root_path: str):
-        self.factory = persistence_factory
-        self.root_path = root_path
-
-    def save(self, manifest_data: dict, manifest_name: str) -> dict:
-        # The repository is responsible for defining the final path
-        filename = f"{self.root_path}/{manifest_name}.json"
-        
-        # Get the correct tool for the job from the Factory
-        orchestrator = self.factory.get_orchestrator(filename, security_level="high")
-        
-        # Use the tool to save the data
-        return orchestrator.save_atomic(filename, manifest_data)
-```
-
-## 4. Wiring It All Together (Application Entry Point)
-
-At the application's main entry point, you instantiate the infrastructure and inject it into the higher-level components.
-
-```python
-# main.py (simplified application entry point)
-
-from src.filesystem.adapter import FilesystemAdapter
-from src.persistence.factory import PersistenceFactory
-from src.manifest.repository import ManifestRepository
-
-def main():
-    # --- Configuration ---
-    DATA_DIR = "/srv/elite-dangerous-dev/pipeline/data"
-    
-    # 1. Initialize Infrastructure Layer (Micro)
-    fs_adapter = FilesystemAdapter()
-
-    # 2. Initialize Persistence Layer Factory (Meso)
-    persistence_factory = PersistenceFactory(filesystem_adapter=fs_adapter)
-
-    # 3. Initialize Service Layer Components (Macro), injecting dependencies
-    manifest_repo = ManifestRepository(
-        persistence_factory=persistence_factory, 
-        root_path=f"{DATA_DIR}/manifests"
-    )
-
-    # --- Example Usage ---
-    my_manifest_data = {
-        "id": "edsm_systems_20260217", 
-        "version": "1.0", 
-        "files": ["systems_part1.json.gz", "systems_part2.json.gz"]
+def bootstrap_persistence():
+    # 1. MOCK: Logic to parse your .ini configuration
+    directory_map = {
+        "data_root": Path("/srv/elite-dangerous-dev/pipeline/tests/data"),
+        "downloads": Path("/srv/elite-dangerous-dev/pipeline/tests/data/downloads"),
+        "manifests": Path("/srv/elite-dangerous-dev/pipeline/tests/data/manifests")
     }
-    
-    print("Attempting to save manifest...")
-    result = manifest_repo.save(my_manifest_data, manifest_name="edsm_systems_manifest")
-    print(f"Manifest saved successfully!")
-    print(f"  -> Checksum (SHA-256): {result['checksum']}")
-    print(f"  -> Size (bytes): {result['size']}")
 
+    # 2. Initialize Micro-Layer (Infrastructure)
+    registry = FilesystemRegistry(directory_map)
+    adapter = FilesystemAdapter(registry)
+
+    # 3. Define the Strategy Resolver (Decision Logic)
+    profiles = {
+        ".json": PersistenceProfile(JsonSerializer(), Sha256Integrity()),
+    }
+    default_profile = PersistenceProfile(JsonSerializer(), Sha256Integrity())
+    resolver = ExtensionStrategyResolver(profiles, default_profile)
+
+    # 4. Initialize Meso-Layer (Factory)
+    factory = LocalPersistenceFactory(adapter, resolver)
+    
+    return factory
+
+# --- Example Execution ---
 if __name__ == "__main__":
-    main()
+    # The factory is created once at startup
+    factory = bootstrap_persistence()
+    
+    # --- A high-level service/repository would then use the factory ---
+    target_file = "manifests/2026/02/market_data.json"
+    file_content = {"status": "active", "systems": 42}
+    
+    # Get the right tool for the job
+    orchestrator = factory.get_orchestrator(target_file)
+    
+    # Execute the persistence workflow
+    checksum = orchestrator.save(target_file, file_content)
+    
+    print(f"Successfully saved to {target_file} with checksum: {checksum}")
 ```

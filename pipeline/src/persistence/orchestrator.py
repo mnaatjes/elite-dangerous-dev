@@ -4,6 +4,7 @@ class PersistenceOrchestrator:
     Product of the Persistence Factory. The Fascade for services and dependencies
     given a specific implementation (local, db, cloud, etc)
     - NOT the entry point
+    - Should NOT know infrastructure logic
     - Holds dependencies
     - Product of Persistent Factory
     - User-Access Layer (Repositories) receive Orchestrator

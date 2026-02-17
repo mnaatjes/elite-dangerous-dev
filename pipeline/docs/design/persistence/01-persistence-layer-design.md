@@ -21,13 +21,22 @@ The interaction between these layers follows a strict, decoupled flow, enforced 
 ```
 pipeline/src/
 ├── filesystem/               <-- MICRO (ADAPTER) LAYER
-│   ├── adapter.py            # Wraps raw file I/O operations.
-│   └── ...
+│   └── adapters/
+│       ├── abstract.py       # Defines the AbstractAdapter interface.
+│       └── filesystem.py     # Wraps raw file I/O operations.
 ├── persistence/              # <-- MESO (PERSISTENCE) LAYER
-│   ├── factory.py            # [ABSTRACT FACTORY] - The main entry point for this package.
 │   ├── orchestrator.py       # [FACADE / ORCHESTRATOR] - Defines the persistence workflow.
-│   ├── integrity/            # [STRATEGY] - Interchangeable hashing algorithms (e.g., SHA256).
-│   └── serialization/        # [STRATEGY] - Interchangeable formatters (e.g., JSON, CSV).
+│   ├── factories/            # [ABSTRACT FACTORY] - Assembles and configures orchestrators.
+│   │   └── local.py
+│   ├── resolvers/            # [STRATEGY RESOLVER] - Selects the correct strategies.
+│   │   └── extension.py
+│   ├── integrity/            # [STRATEGY] - Interchangeable hashing algorithms.
+│   │   └── sha256.py
+│   ├── serialization/        # [STRATEGY] - Interchangeable formatters.
+│   │   └── json.py
+│   └── interfaces/           # [INTERFACES / CONTRACTS] - Defines the ABCs for the layer.
+│       ├── models.py         # Contains the PersistenceProfile DTO.
+│       └── ...
 └── manifest/                 # <-- MACRO (SERVICE) LAYER
     ├── repository.py         # [REPOSITORY] - Uses the Persistence Factory to save manifest objects.
     └── ...
@@ -36,16 +45,16 @@ pipeline/src/
 ### Data Flow
 
 1.  A **Service** (e.g., `ManifestService`) decides to save a domain object.
-2.  It uses its **Repository**, which calls the `PersistenceFactory` to get the correct persistence "tool" for the job.
-3.  The `PersistenceFactory` assembles and returns a pre-configured `PersistenceOrchestrator`.
-4.  The `Repository` tells the `PersistenceOrchestrator` to save the data.
-5.  The `PersistenceOrchestrator` executes the save workflow:
-    a.  Uses a `SerializerStrategy` to convert the data to a string.
-    b.  Encodes the string to bytes (`utf-8`).
-    c.  Uses an `IntegrityStrategy` to calculate a checksum of the bytes.
-    d.  Passes the bytes to the `FilesystemAdapter`.
-6.  The `FilesystemAdapter` performs the atomic write operation (write to `.tmp` file, then `os.replace`).
-7.  The checksum and file size are returned up the chain to the `Repository`, which may store this metadata.
+2.  It uses its **Repository**, which calls the `PersistenceFactory` to get the correct persistence "tool" for the job (e.g., for `downloads/data.json`).
+3.  The `PersistenceFactory` asks the `StrategyResolver` for the correct `PersistenceProfile` (containing the `Serializer` and `Integrity` strategies) based on the target string.
+4.  The `PersistenceFactory` assembles and returns a pre-configured `PersistenceOrchestrator`, injecting the adapter and the resolved profile.
+5.  The `Repository` tells the `PersistenceOrchestrator` to save the data.
+6.  The `PersistenceOrchestrator` executes the save workflow:
+    a.  Uses the `SerializerStrategy` from its profile to convert the data to a string or bytes.
+    b.  Uses the `IntegrityStrategy` from its profile to calculate a checksum of the payload.
+    c.  Passes the payload to the `FilesystemAdapter`.
+7.  The `FilesystemAdapter` performs the atomic write operation.
+8.  The checksum is returned up the chain to the `Repository`.
 
 ## 2. Core Patterns & Responsibilities
 
@@ -53,29 +62,29 @@ The persistence layer relies on several key design patterns to achieve its goals
 
 ### Persistence Orchestrator: The "Brain"
 
-The `PersistenceOrchestrator` acts as a **Facade** and an **Orchestrator**. It simplifies the persistence process into a single `save_atomic()` call while coordinating the underlying strategies and adapters. Its responsibilities are:
+The `PersistenceOrchestrator` acts as a **Facade** and an **Orchestrator**. It simplifies the persistence process into a single `save()` call while coordinating the underlying strategies and adapters. Its responsibilities are:
 
--   **Workflow Coordination:** Executing the sequence: Serialize -> Encode -> Hash -> Write -> Rename.
--   **Data Transformation:** Delegating object-to-byte conversion to the appropriate strategies.
+-   **Workflow Coordination:** Executing the sequence: Serialize -> Hash -> Write.
+-   **Abstraction:** Hiding all infrastructure details (like hashing and serialization) from the service layer.
 -   **Integrity & Auditability:** Generating and returning checksums for all written data.
--   **Safety & Atomicity:** Ensuring that file writes are transactional and that no corrupted "half-files" are left behind.
--   **Abstraction:** Hiding all infrastructure details from the service layer.
 
 ### Key Design Patterns
 
 | Pattern | Role & Location | Why it's used |
 | :--- | :--- | :--- |
 | **Repository** | `manifest/repository.py` | To decouple the domain layer from persistence details. The repository "speaks" in terms of domain objects. |
-| **Abstract Factory** | `persistence/factory.py` | To select and assemble the correct `Orchestrator` with the right `Strategies`. This is the single entry point to the persistence package. |
+| **Abstract Factory** | `persistence/factories/` | To assemble the correct `Orchestrator` with the right `Strategies`. This is the single entry point to the persistence package. |
+| **Strategy Resolver** | `persistence/resolvers/` | To decouple the *selection* of strategies from the factory. It maps a target (like a file extension) to a specific `PersistenceProfile`. |
 | **Strategy** | `persistence/integrity/`, `persistence/serialization/` | To make algorithms (hashing, serialization) interchangeable. This allows the system to support new formats and security levels without changing the core workflow. |
-| **Adapter** | `filesystem/adapter.py` | To wrap and isolate low-level OS calls. This makes the storage medium swappable (e.g., from local disk to S3) and improves testability. |
-| **Template Method** | `persistence/orchestrator.py` | The `save_atomic` method acts as a template, defining the fixed steps of the persistence algorithm. |
+| **Adapter** | `filesystem/adapters/` | To wrap and isolate low-level OS calls. This makes the storage medium swappable (e.g., from local disk to S3) and improves testability. |
+| **Template Method** | `persistence/orchestrator.py` | The `save` method acts as a template, defining the fixed steps of the persistence algorithm (serialize, calculate integrity, write). |
 
-### Factory vs. Strategy: Complementary Roles
+### Factory, Resolver, and Strategy: Complementary Roles
 
-You need both:
+You need all three:
 -   **Strategy Pattern (The "How"):** Provides the interchangeable parts (e.g., `JsonSerializer`, `SHA256Strategy`). It gives you variety.
--   **Factory Pattern (The "Who"/"When"):** Provides the "assembly line" that selects the right strategies for a given task (e.g., a `.json` file) and builds the final `Orchestrator` tool. It gives you selection and simplicity.
+-   **Resolver Pattern (The "Which"):** Provides the decision-making logic that selects the right strategies for a given task (e.g., a `.json` file gets a `JsonSerializer`).
+-   **Factory Pattern (The "Who"/"When"):** Provides the "assembly line" that uses the `Resolver` to get the parts and builds the final `Orchestrator` tool.
 
 Your service-level components should **only** interact with the Factory.
 
@@ -85,43 +94,22 @@ Your service-level components should **only** interact with the Factory.
 
 To ensure swappability, all strategies must adhere to a strict "contract" defined by an Abstract Base Class (ABC).
 
-**Integrity Strategy Interface:**
+**Strategy Interfaces (from `persistence/interfaces/models.py`)**
 ```python
+from typing import NamedTuple, Any, Union
 from abc import ABC, abstractmethod
-from typing import Generator
-
-class IntegrityStrategy(ABC):
-    @abstractmethod
-    def calculate(self, byte_generator: Generator[bytes, None, None]) -> str:
-        """Consumes a stream of bytes and returns a hex digest."""
-        pass
-
-    @property @abstractmethod
-    def algorithm_name(self) -> str:
-        """Returns the name of the algorithm (e.g., 'SHA-256')."""
-        pass
-```
-
-**Serializer Strategy Interface:**
-```python
-from abc import ABC, abstractmethod
-from typing import Any
 
 class SerializerStrategy(ABC):
     @abstractmethod
-    def serialize(self, data: Any) -> str:
-        """Converts Python objects/dicts into a formatted string."""
-        pass
-
+    def serialize(self, data: Any) -> Union[str, bytes]: pass
     @abstractmethod
-    def deserialize(self, data_str: str) -> Any:
-        """Converts a formatted string back into Python objects/dicts."""
-        pass
+    def deserialize(self, payload: Union[str, bytes]) -> Any: pass
 
-    @property @abstractmethod
-    def format_extension(self) -> str:
-        """Returns the preferred file extension (e.g., '.json')."""
-        pass
+class IntegrityStrategy(ABC):
+    @abstractmethod
+    def calculate(self, payload: Union[str, bytes]) -> str: pass
+    @abstractmethod
+    def validate(self, payload: Union[str, bytes], expected: str) -> bool: pass
 ```
 
 ### Concrete Strategies
