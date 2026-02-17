@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import Literal
 
 class DirConfig(BaseModel):
-    base_data: Path = Path("data")
+    data_root: Path = Path("data")
     downloads: Path = Path("data/downloads")
     manifests: Path = Path("data/manifests")
     sources: Path = Path("data/sources")

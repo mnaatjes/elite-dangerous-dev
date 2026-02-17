@@ -1,8 +1,12 @@
+# --- Libraries ---
 from pathlib import Path
 import shutil
-from .registry import FilesystemRegistry
 
-class FilesystemAdapter:
+# --- Dependencies ---
+from .abstract import AbstractAdapter
+from ..registry import FilesystemRegistry
+
+class FilesystemAdapter(AbstractAdapter):
     # For singleton implementation
     _instance = None
 
@@ -26,6 +30,9 @@ class FilesystemAdapter:
             self._initialized = True
 
     # --- Abstraction Method Implementations ---
+    def provider_name(self) -> str:
+        return "Linux-Filesystem"
+
     def resolve(self, target:str) -> Path:
         """
         Translates a logical target (filepath) into a pysical disk location
@@ -89,6 +96,15 @@ class FilesystemAdapter:
         path = self.resolve(target)
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(payload)
+
+    def write(self, target:str, payload:str):
+        raise ModuleNotFoundError("Method 'write' is incomplete!")
+        return self.write_text(target, payload)
+    
+    # --- I/O Methods: Read ---
+
+    def read(self, target:str):
+        pass
 
     # --- Helper Methods ---
     
