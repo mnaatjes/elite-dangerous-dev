@@ -19,8 +19,9 @@ class PersistenceOrchestrator:
         2. Transformation - Serializer (What)
         3. Integrity - Validation and Safety (Proof)
     """
-    def __init__(self, adapter, profile) -> None:
+    def __init__(self, adapter, monitor, profile) -> None:
         self._adapter    = adapter
+        self._monitor    = monitor
         self._serializer = profile.serializer
         self._integrity  = profile.integrity
     

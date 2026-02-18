@@ -1,37 +1,37 @@
-from ..filesystem import Filesystem
-from .factories import PersistenceFactory, LocalPersistenceFactory
-from .strategies import AtomicJSONSerializer, AtomicSha256Strategy, StreamingSha256Strategy
-from .models import PersistenceProfile
-from .resolvers import ExtensionStrategyResolver
+# src/persistence/manager.py
+from ..core import SystemMonitor
+from .orchestrator import PersistenceOrchestrator
 
 class PersistenceManager:
     """
-    This will be the main entry point for assembling the correct factory
-    - Assembles the Meso-layer (Factory) using pre-existing 
-    - Micro-layer singletons (Settings & Adapter).
-    
+    This will be the Main Entry Point and output the necessary Persistence orchestrator
+    - Assembles the Orchestrator
+    - Composes Dependencies
+    - Uses Business (how) and Infrastructural (where) logic
+    - Able to produce an Orchestrator for ANY Adapter (Infrastructure)
     """
-    @staticmethod
-    def build_local_factory() -> LocalPersistenceFactory:
+    def __init__(self, adapter, resolver):
+        # 1. Infrastructure (The Hand)
+        self._adapter = adapter
+        
+        # 2. Business Logic (The Brains)
+        self._resolver = resolver
+        
+        # 3. Bedrock Utilities (The Eyes/Sensors)
+        # We instantiate this here once so all Orchestrators share it.
+        self._monitor = SystemMonitor()
+
+    def get_orchestrator(self, target: str) -> PersistenceOrchestrator:
         """
-        Builds Local Persistence Factory from Defined Strategies and Resolvers
+        The User's only necessary call. 
+        It performs the 'Target Analysis' and assembles the engine.
         """
-        # 1. Define all PersistenceProfiles
-        json_profile = PersistenceProfile(
-            AtomicJSONSerializer(),
-            AtomicSha256Strategy()
-        )
+        # STEP A: Resolve the Business Rules (Serializer/Integrity)
+        profile = self._resolver.resolve(target)
 
-        # Assemble Profiles for Resolver DI
-        profiles = {
-            ".json": json_profile
-        }
-
-        # 2. Declare resolver
-        resolver = ExtensionStrategyResolver(profiles, json_profile)
-
-        # 3. Return configured factory
-        return LocalPersistenceFactory(
-            adapter=Filesystem,
-            resolver=resolver
+        # STEP B: Return the fully-equipped engine
+        return PersistenceOrchestrator(
+            adapter=self._adapter,
+            monitor=self._monitor,
+            profile=profile
         )

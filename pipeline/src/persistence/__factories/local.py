@@ -3,7 +3,7 @@ from typing import List
 from src.persistence.orchestrator import PersistenceOrchestrator
 from src.persistence.resolvers.abstract import StrategyResolver
 from .abstract import PersistenceFactory
-from ...filesystem.adapters import Adapter
+from ...adapters import AdapterFactory, Adapter
 
 class LocalPersistenceFactory(PersistenceFactory):
 

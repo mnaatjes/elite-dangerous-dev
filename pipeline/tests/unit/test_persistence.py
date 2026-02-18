@@ -1,32 +1,6 @@
+# tests/unit/test_persistence.py
 
-from src.filesystem import Filesystem
-from src.persistence import PersistenceManager
+def test_bootstrap(bootstrap):
+    result = bootstrap
 
-def test_adapter():
-    cap = Filesystem.get_capacity("downloads")
-    print(f"Capacity (bytes): {cap}")
-def __test_implement():
-    
-    target_path = "/downloads/file.json"
-    
-    local = PersistenceManager.build_local_factory()
-    orchestrator = local.get_orchestrator(target_path)
-    checksum = orchestrator.save_atomic(target_path, {"stuff": ["thing", "dog", "fish"]})
-    print(f"Checksum: {checksum}")
-
-def __test_persistence_run():
-    pass
-
-    class Repo:
-        def __init__(self, persistence_factory) -> None:
-            self._factory = persistence_factory
-
-        def store_item(self, data:dict):
-            target = "downloads/2026/02/file.json"
-            tool = self._factory.get_orchestrator(target)
-
-
-    
-            
-
-    
+    print(f"Result: {result}")
