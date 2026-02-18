@@ -3,10 +3,10 @@ from pathlib import Path
 import shutil
 
 # --- Dependencies ---
-from .abstract import AbstractAdapter
+from ..abstract import AbstractAdapter
 from ..registry import FilesystemRegistry
 
-class FilesystemAdapter(AbstractAdapter):
+class LocalFilesystemAdapter(AbstractAdapter):
     # For singleton implementation
     _instance = None
 
