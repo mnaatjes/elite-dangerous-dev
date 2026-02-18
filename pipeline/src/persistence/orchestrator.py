@@ -1,3 +1,4 @@
+from .models import PersistenceProfile
 
 class PersistenceOrchestrator:
     """
@@ -14,13 +15,31 @@ class PersistenceOrchestrator:
         2. Transformation - Serializer (What)
         3. Integrity - Validation and Safety (Proof)
     """
-    def __init__(self, adapter, serializer_strategy, integrity_strategy) -> None:
+    def __init__(self, adapter, profile) -> None:
         self._adapter    = adapter
-        self._serializer = serializer_strategy
-        self._integrity  = integrity_strategy
+        self._serializer = profile.serializer
+        self._integrity  = profile.integrity
     
-    def save(self, path, data, atomic=True):
-        pass
+    def save(self, target, data, atomic=True) -> str:
+        """
+        Returns:
+            Checksum (str) from Integrity.calculate() method
+        """
+        # 1. Validate Path exists
+        try:
+            self._adapter.exists(target)
+        except Exception as e:
+            raise e
+
+        # 2. Serialize Payload and Check Integrity
+        payload     = self._serializer.serialize(data)
+        checksum    = self._integrity.calculate(payload)
+
+        # 3. Perform write() with Adapter
+        self._adapter.write(target, payload)
+
+        # 4. Return checksum from integrity.calculate()
+        return checksum
 
     def _save_atomic(self, path, data):
         pass

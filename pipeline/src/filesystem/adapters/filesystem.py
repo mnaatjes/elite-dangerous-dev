@@ -30,6 +30,7 @@ class FilesystemAdapter(AbstractAdapter):
             self._initialized = True
 
     # --- Abstraction Method Implementations ---
+    @property
     def provider_name(self) -> str:
         return "Linux-Filesystem"
 
@@ -98,7 +99,7 @@ class FilesystemAdapter(AbstractAdapter):
         path.write_text(payload)
 
     def write(self, target:str, payload:str):
-        raise ModuleNotFoundError("Method 'write' is incomplete!")
+        #raise ModuleNotFoundError("Method 'write' is incomplete!")
         return self.write_text(target, payload)
     
     # --- I/O Methods: Read ---

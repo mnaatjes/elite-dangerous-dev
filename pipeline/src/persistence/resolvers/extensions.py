@@ -1,8 +1,8 @@
 import os
-from ..interfaces.strategies import AbstractStrategyResolver
-from ..interfaces.models import PersistenceProfile
+from .abstract import StrategyResolver
+from ..models import PersistenceProfile
 
-class ExtensionStrategyResolver(AbstractStrategyResolver):
+class ExtensionStrategyResolver(StrategyResolver):
     def __init__(self, profiles: dict[str, PersistenceProfile], default: PersistenceProfile):
         self._profiles = profiles
         self._default = default

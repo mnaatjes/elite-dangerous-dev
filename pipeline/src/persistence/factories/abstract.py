@@ -18,10 +18,6 @@ class PersistenceFactory(ABC):
         * Keeps a strategy_map in some implementations
     
     """
-    @property
-    @abstractmethod
-    def supported_formats(self) -> List[str]:
-        return [""]
 
     @abstractmethod
     def get_orchestrator(self, target:str, **kwargs) -> PersistenceOrchestrator:
