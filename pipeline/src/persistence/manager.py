@@ -1,6 +1,6 @@
 from ..filesystem import Filesystem
 from .factories import PersistenceFactory, LocalPersistenceFactory
-from .strategies import JsonSerializer, Sha256Strategy
+from .strategies import AtomicJSONSerializer, AtomicSha256Strategy, StreamingSha256Strategy
 from .models import PersistenceProfile
 from .resolvers import ExtensionStrategyResolver
 
@@ -17,16 +17,18 @@ class PersistenceManager:
         Builds Local Persistence Factory from Defined Strategies and Resolvers
         """
         # 1. Define all PersistenceProfiles
-        default_profile = PersistenceProfile(
-            JsonSerializer(),
-            Sha256Strategy()
+        json_profile = PersistenceProfile(
+            AtomicJSONSerializer(),
+            AtomicSha256Strategy()
         )
+
+        # Assemble Profiles for Resolver DI
         profiles = {
-            ".json": default_profile
+            ".json": json_profile
         }
 
         # 2. Declare resolver
-        resolver = ExtensionStrategyResolver(profiles, default_profile)
+        resolver = ExtensionStrategyResolver(profiles, json_profile)
 
         # 3. Return configured factory
         return LocalPersistenceFactory(

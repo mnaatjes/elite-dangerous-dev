@@ -31,3 +31,8 @@ class AbstractAdapter(ABC):
     def remove(self, target: str) -> None:
         """Delete the resource at the target location."""
         pass
+
+    @abstractmethod
+    def get_capacity(self, path: str) -> int:
+        """Returns available capacity at a specific resolved location."""
+        pass

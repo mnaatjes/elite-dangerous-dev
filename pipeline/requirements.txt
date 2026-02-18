@@ -2,3 +2,4 @@ pytest
 pydantic
 pydantic-settings
 ijson
+psutil

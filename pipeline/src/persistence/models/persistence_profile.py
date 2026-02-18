@@ -1,9 +1,10 @@
-from typing import NamedTuple
-from ..strategies import SerializerStrategy, IntegrityStrategy
+from typing import NamedTuple, Union
+from ..strategies import SerializerStrategy, StreamingSerializerStrategy, IntegrityStrategy, StreamingIntegrityStrategy
 
 class PersistenceProfile(NamedTuple):
     """
-    Strategy Buldle - simple data container representing the set of tools the Orchestrator needs
+    Groups strategies. Note that for a 'Streaming' profile, 
+    the strategies should ideally implement the Stateful abstracts.
     """
-    serializer: SerializerStrategy
-    integrity: IntegrityStrategy
+    serializer: Union[SerializerStrategy, StreamingSerializerStrategy]
+    integrity: Union[IntegrityStrategy, StreamingIntegrityStrategy]

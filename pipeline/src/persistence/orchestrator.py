@@ -1,4 +1,9 @@
-from .models import PersistenceProfile
+# --- Libraries ---
+from typing import Any, Iterable
+
+# --- Dependencies ---
+from .middleware import PersistenceStreamProcessor
+from .strategies import StreamingSerializerStrategy
 
 class PersistenceOrchestrator:
     """
@@ -20,26 +25,50 @@ class PersistenceOrchestrator:
         self._serializer = profile.serializer
         self._integrity  = profile.integrity
     
-    def save(self, target, data, atomic=True) -> str:
+    def save_atomic(self, target: str, data: Any) -> str:
         """
-        Returns:
-            Checksum (str) from Integrity.calculate() method
+        Handles small payloads by encoding and hashing the entire object in memory.
+        :return: Checksum string (Source of Truth).
         """
-        # 1. Validate Path exists
-        try:
-            self._adapter.exists(target)
-        except Exception as e:
-            raise e
+        # 1. Infrastructure Encoding (e.g., dict -> json string)
+        # Using 'encode' as per our AtomicSerializerStrategy abstract
+        payload = self._serializer.encode(data)
+        
+        # 2. Integrity Calculation
+        checksum = self._integrity.calculate(payload)
 
-        # 2. Serialize Payload and Check Integrity
-        payload     = self._serializer.serialize(data)
-        checksum    = self._integrity.calculate(payload)
-
-        # 3. Perform write() with Adapter
+        # 3. Persistence via Adapter
         self._adapter.write(target, payload)
 
-        # 4. Return checksum from integrity.calculate()
         return checksum
 
-    def _save_atomic(self, path, data):
-        pass
+    def save_stream(self, target: str, data_generator: Iterable, mode: str = "wb") -> str:
+        """
+        Orchestrates a memory-efficient streaming write.
+        
+        The middleware handles the heavy lifting of ensuring data is 
+        encoded and hashed in the correct order before being passed to 
+        the adapter for physical I/O.
+
+        Selection is an Intent Signal that the data cannot fit in the RAM and
+        therefore MUST be streamed
+        - This bypasses any Atomic Serializers; as data already chunked
+        """
+        # 1. Wrap the raw generator with our Encoding + Integrity middleware
+        # This transforms the source into a finalized byte-stream
+        processed_stream = PersistenceStreamProcessor.wrap(
+            source=data_generator,
+            serializer=self._serializer,
+            integrity=self._integrity
+        )
+
+        # 2. Hand off the processed generator to the Adapter (the Sink)
+        # The adapter is now guaranteed to receive a stream of 'bytes'
+        self._adapter.write_stream(
+            target=target,
+            data_generator=processed_stream,
+            mode=mode
+        )
+
+        # 3. Finalize the integrity fingerprint and return it
+        return self._integrity.finalize()

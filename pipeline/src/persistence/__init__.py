@@ -3,6 +3,7 @@ from .factories import LocalPersistenceFactory
 from .manager import PersistenceManager
 
 __all__ = [
+    # --- Interfaces ---
     "LocalPersistenceFactory",
-    "PersistenceManager"
+    "PersistenceManager",
 ]
