@@ -1,13 +1,14 @@
 from typing import Any, Union
-from ..abstract_atomic import SerializerStrategy
+from ..abstracts import AtomicSerializer
 
-class AtomicBinarySerializer(SerializerStrategy):
+class AtomicBinarySerializer(AtomicSerializer):
     """
     Handles atomic encoding of data into binary format.
     
     In the context of the ETL pipeline, this is used for small binary 
     metadata or pre-transformed data blobs that fit entirely in memory.
     """
+    NAME = "bin"
 
     def encode(self, data: Any) -> bytes:
         """

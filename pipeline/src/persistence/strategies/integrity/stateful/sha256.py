@@ -1,9 +1,12 @@
 import hashlib
 import hmac
 from typing import Union
-from ..abstract_stateful import StreamingIntegrityStrategy
+from ..abstracts import StreamingIntegrity
 
-class StreamingSha256Strategy(StreamingIntegrityStrategy):
+class StreamingSha256Strategy(StreamingIntegrity):
+
+    NAME = "sha256"
+    
     def __init__(self):
         # State maintained for streaming
         self._context = hashlib.sha256()

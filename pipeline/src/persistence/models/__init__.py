@@ -1,4 +1,9 @@
 # persistence/models/__init__.py
-from .persistence_profile import PersistenceProfile
 
-__all__ = ["PersistenceProfile"]
+from .strategy_manifest import StrategyManifest
+from .execution_plan import ExecutionPlan
+
+__all__ = [
+    "StrategyManifest",
+    "ExecutionPlan"
+]

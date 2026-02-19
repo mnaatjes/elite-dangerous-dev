@@ -4,12 +4,13 @@ from typing import Union
 from hmac import compare_digest
 
 # --- Dependencies ---
-from ..abstract_atomic import IntegrityStrategy
+from ..abstracts import AtomicIntegrity
 
-class AtomicSha256Strategy(IntegrityStrategy):
+class AtomicSha256Strategy(AtomicIntegrity):
     """
     Concrete implementation of IntegrityStrategy using the SHA-256 algorithm.
     """
+    NAME = "sha256"
 
     def calculate(self, payload: Union[str, bytes]) -> str:
         """

@@ -1,15 +1,14 @@
-# persistence/strategies/serialization/__init__.
+# src/persistence/strategies/serialization/__init__.py
+from .abstracts import AbstractSerializer, AtomicSerializer, StreamingSerializer
+from .atomic import (
+    AtomicJSONSerializer, 
+    AtomicBinarySerializer, 
+    AtomicYAMLSerializer,
+    AtomicMsgPackSerializer
+)
+from .stateful import (
+    NDJsonSerializer
+)
 
-from .abstract_atomic import SerializerStrategy
-from .abstract_stateful import StreamingSerializerStrategy
-from .atomic import AtomicJSONSerializer, AtomicBinarySerializer
-
-
-__all__ = [
-    "SerializerStrategy",
-    # --- Atomic Strategies ---
-    "AtomicJSONSerializer",
-    "AtomicBinarySerializer",
-    # --- Stateful Strategies ---
-    "StreamingSerializerStrategy"
-]
+# If you had stateful ones:
+# from .stateful import NDJsonSerializer

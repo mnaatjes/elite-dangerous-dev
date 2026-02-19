@@ -3,3 +3,5 @@ pydantic
 pydantic-settings
 ijson
 psutil
+PyYAML~=6.0.1
+msgpack

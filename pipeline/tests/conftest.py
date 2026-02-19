@@ -1,8 +1,13 @@
+# tests/conftest.py
 import pytest
 from src.config import settings
+from src.adapters.factory import AdapterFactory
+from src.persistence.strategies.library import StrategyLibrary
+from src.persistence.strategies.const import Capability, Category
 from src.persistence import PersistenceManager
-from src.adapters import AdapterFactory
-# tests/conftest.py
+# --- Serializers and Integrity Strategies ---
+from src.persistence.strategies.serialization import AtomicBinarySerializer, AtomicJSONSerializer
+from src.persistence.strategies.integrity import AtomicSha256Strategy, NoOpIntegrity
 
 # --- Bootstrapper Method ---
 @pytest.fixture(scope="session", autouse=True)
@@ -11,10 +16,17 @@ def bootstrap():
     # 1. Build Adapter
     adapter = AdapterFactory().build_local_filesystem(settings)
 
-    # 2. Get Resolver
+    # Get Persistence Manger
+    pm = PersistenceManager(adapter=adapter)
 
-    # 3. Build Orchestrator
-    pm = PersistenceManager(
-        adapter=adapter,
-        resolver=
+    
+    manifest = pm.lib.find(
+        category=Category.SERIALIZER,
+        required_capabilities=Capability.STREAM
     )
+
+    print(f"Manifest: {manifest}")
+
+    for i in pm.lib.list_all():
+        print(f"\t --- {i}\n")
+    

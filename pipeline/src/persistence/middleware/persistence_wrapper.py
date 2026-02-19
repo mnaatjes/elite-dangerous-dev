@@ -1,6 +1,6 @@
 from typing import Iterable, Any
-from ..strategies.serialization import StreamingSerializerStrategy
-from ..strategies.integrity import StreamingIntegrityStrategy
+from ..strategies.serialization import StreamingSerializer
+from ..strategies.integrity import StreamingIntegrity
 
 class PersistenceStreamProcessor:
     """
@@ -16,8 +16,8 @@ class PersistenceStreamProcessor:
         
         for chunk in source:
             # 1. Infrastructure Encoding
-            if isinstance(serializer, StreamingSerializerStrategy):
-                chunk = serializer.encode_chunk(chunk)
+            if isinstance(serializer, StreamingSerializer):
+                chunk = serializer.encode_item(chunk)
             
             # 2. Type Guard: Ensure chunk is bytes for Integrity and Adapter
             # This satisfies VSCode/Pylance and prevents runtime Hash errors
@@ -25,7 +25,7 @@ class PersistenceStreamProcessor:
                 chunk = chunk.encode('utf-8')
             
             # 3. Integrity Observation
-            if isinstance(integrity, StreamingIntegrityStrategy):
+            if isinstance(integrity, StreamingIntegrity):
                 # VSCode is happy now because chunk is guaranteed to be bytes
                 integrity.update(chunk)
             

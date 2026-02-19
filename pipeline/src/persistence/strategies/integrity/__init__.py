@@ -1,15 +1,20 @@
 # persistence/strategies/integrity/__init__.py
 
-from .abstract_atomic import IntegrityStrategy
-from .abstract_stateful import StreamingIntegrityStrategy
+# --- Abstracts ---
+from .abstracts import AtomicIntegrity, StreamingIntegrity
+from .no_op import NoOpIntegrity
+# --- Atomic ---
 from .atomic.sha256 import AtomicSha256Strategy
+# --- Streaming ---
 from .stateful.sha256 import StreamingSha256Strategy
 
 __all__ = [
+    # --- Abstracts ---
+    "AtomicIntegrity",
+    "StreamingIntegrity",
+    "NoOpIntegrity",
     # --- Atomic ---
-    "IntegrityStrategy",
     "AtomicSha256Strategy",
     # --- Streaming ---
-    "StreamingIntegrityStrategy",
     "StreamingSha256Strategy"
 ]

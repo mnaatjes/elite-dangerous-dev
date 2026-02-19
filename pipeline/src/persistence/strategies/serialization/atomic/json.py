@@ -1,8 +1,9 @@
 import json
 from typing import Any, Union
-from ..abstract_atomic import SerializerStrategy
+from ..abstracts import AtomicSerializer
 
-class AtomicJSONSerializer(SerializerStrategy):
+class AtomicJSONSerializer(AtomicSerializer):
+    NAME = "json"
     """
     Concrete strategy for JSON serialization.
     Handles the conversion of Python dicts/lists to JSON strings.
