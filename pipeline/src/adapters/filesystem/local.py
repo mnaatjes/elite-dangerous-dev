@@ -102,36 +102,56 @@ class LocalFilesystemAdapter(AbstractAdapter):
     def write_text(self, target: str, payload: str):
         """Standard text write."""
         path = self.resolve(target)
+        print(path)
+        #return
         path.parent.mkdir(parents=True, exist_ok=True)
         return path.write_text(payload)
 
-    # --- I/O Methods: STATEFUL Write ---
+    # --- I/O Methods: STATEFUL Write/Read ---
+
     @contextmanager
-    def open_stream(self, target: str, mode: str = "wb") -> Generator[IO, None, None]:
-        """
-        Provides a managed file handle for streaming I/O.
-        Ensures directories exist and handles are closed automatically.
-        """
+    def open_bytes_stream(self, target: str, mode: str = "rb") -> Generator[IO, None, None]:
+        """Provides a managed binary file handle for streaming I/O."""
         path = self.resolve(target)
         
-        # Ensure the 'mkdir -p' behavior
-        path.parent.mkdir(parents=True, exist_ok=True)
-        
-        # Open the handle
+        # For write modes, ensure directories exist
+        if "w" in mode or "a" in mode:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            
         handle = path.open(mode=mode)
-        
         try:
-            # Give the handle to the Orchestrator
             yield handle
         finally:
-            # This block runs even if an exception occurs in the Orchestrator loop
-            handle.flush()
-            handle.close()
+            if not handle.closed:
+                handle.flush() if "w" in mode or "a" in mode else None
+                handle.close()
 
-    # --- I/O Methods: Read ---
+    @contextmanager
+    def open_text_stream(self, target: str, mode: str = "r") -> Generator[IO, None, None]:
+        """Provides a managed text file handle for streaming I/O."""
+        path = self.resolve(target)
+        
+        if "w" in mode or "a" in mode:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            
+        # Explicitly enforce UTF-8 for text streams
+        handle = path.open(mode=mode, encoding="utf-8")
+        try:
+            yield handle
+        finally:
+            if not handle.closed:
+                handle.flush() if "w" in mode or "a" in mode else None
+                handle.close()
 
-    def read(self, target:str):
-        pass
+    # --- I/O Methods: ATOMIC Read ---
+
+    def read_bytes(self, target: str) -> bytes:
+        """Atomic binary read from a logical target."""
+        return self.resolve(target).read_bytes()
+
+    def read_text(self, target: str) -> str:
+        """Atomic UTF-8 text read from a logical target."""
+        return self.resolve(target).read_text(encoding="utf-8")
 
     # --- Helper Methods ---
     

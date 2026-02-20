@@ -23,11 +23,6 @@ class AbstractAdapter(ABC):
         pass
 
     @abstractmethod
-    def get_capacity(self, path: str) -> int:
-        """Returns available capacity at a specific resolved location."""
-        pass
-
-    @abstractmethod
     def open_text_stream(self, target: str, mode: str) -> ContextManager[Any]:
         """Provides a handle for line-by-line text I/O (e.g., NDJSON)."""
         pass
@@ -35,11 +30,6 @@ class AbstractAdapter(ABC):
     @abstractmethod
     def open_bytes_stream(self, target: str, mode: str) -> ContextManager[Any]:
         """Provides a handle for chunked binary I/O (e.g., Gzip/Compressed)."""
-        pass
-
-    @abstractmethod
-    def write(self, target: str, payload: Any) -> None:
-        """Persist the payload to the specific target location."""
         pass
 
     @abstractmethod
