@@ -1,32 +1,30 @@
+# src/persistence/strategies/integrity/stateful/sha256.py
 import hashlib
-import hmac
-from typing import Union
+from typing import Any, Optional
 from ..abstracts import StreamingIntegrity
+from ...const import Capability, Category
 
 class StreamingSha256Strategy(StreamingIntegrity):
+    NAME = "sha256_stream"
+    CATEGORY = Category.INTEGRITY
+    CAPABILITIES = Capability.STREAM | Capability.APPEND
+    IS_ABSTRACT = False
 
-    NAME = "sha256"
-    
     def __init__(self):
-        # State maintained for streaming
-        self._context = hashlib.sha256()
+        self._hash = hashlib.sha256()
 
-    # --- Streaming Methods ---
     def update(self, chunk: bytes) -> None:
-        self._context.update(chunk)
+        """Adds a chunk of bytes to the rolling checksum."""
+        self._hash.update(chunk)
 
     def finalize(self) -> str:
-        # Returns digest and resets state for the next use
-        digest = self._context.hexdigest()
-        self._context = hashlib.sha256() 
-        return digest
+        """Returns the final hex digest as a string."""
+        return self._hash.hexdigest()
 
-    # --- Atomic Methods (Parent Compliance) ---
-    def calculate(self, payload: Union[str, bytes]) -> str:
-        if isinstance(payload, str):
-            payload = payload.encode('utf-8')
-        return hashlib.sha256(payload).hexdigest()
+    def reset(self) -> None:
+        """Clears the hash for a new operation."""
+        self._hash = hashlib.sha256()
 
-    def validate(self, payload: Union[str, bytes], expected: str) -> bool:
-        calculated = self.calculate(payload)
-        return hmac.compare_digest(calculated, expected.lower())
+    def validate(self, expected: str, actual: str) -> bool:
+        """Standard hex string comparison."""
+        return expected.strip().lower() == actual.strip().lower()

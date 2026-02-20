@@ -1,15 +1,33 @@
+from typing import Any
+
 from ..const import Capability
-from .abstracts import StreamingIntegrity
+from .abstracts import StreamingIntegrity, AtomicIntegrity
 from ..const import Capability, Category
 
-class NoOpIntegrity(StreamingIntegrity):
+
+# Inherit from BOTH to satisfy all type guards
+class NoOpIntegrity(AtomicIntegrity, StreamingIntegrity):
     NAME = "no_op"
     CATEGORY = Category.INTEGRITY
-    # Works for everything because it does nothing.
     CAPABILITIES = Capability.ATOMIC | Capability.STREAM | Capability.APPEND
+    IS_ABSTRACT = False
 
-    def calculate(self, payload) -> str: return ""
-    def validate(self, payload, expected) -> bool: return True
-    def update(self, chunk) -> None: pass
-    def finalize(self) -> str: return ""
-    def reset(self) -> None: pass
+    # --- Atomic Method ---
+    def calculate(self, data: bytes) -> str:
+        return ""
+
+    # --- Streaming Methods ---
+    def update(self, chunk: bytes) -> None:
+        pass
+
+    def finalize(self) -> str:
+        return ""
+
+    # --- The Missing Contract Methods ---
+    def reset(self) -> None:
+        """Required by abstract: Clears internal state for reuse."""
+        pass
+
+    def validate(self, expected: Any, actual: Any) -> bool:
+        """Required by abstract: Standard equality check."""
+        return True

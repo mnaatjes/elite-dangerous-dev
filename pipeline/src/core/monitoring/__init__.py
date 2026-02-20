@@ -1,4 +1,5 @@
 # src/core/monitoring/__init__.py
+import psutil
 from .memory.ram import RAMSensor
 from .memory.process import ProcessSensor
 from .memory.swap import SwapSensor
@@ -28,7 +29,8 @@ class SystemMonitor:
     The Meso-layer's diagnostic hub. 
     Aggregates Micro-sensors and enforces System Safety Policies.
     """
-    def __init__(self):
+    def __init__(self, mem_threshold=85.0):
+        self.mem_threshold = mem_threshold
         self._sensors = {
             "ram": RAMSensor(),
             "process": ProcessSensor(),
@@ -84,3 +86,18 @@ class SystemMonitor:
         is likely slowing down due to disk I/O.
         """
         return self._sensors["swap"].is_healthy() and self._sensors["ram"].is_healthy()
+    
+    def is_pressure_high(self) -> bool:
+            """
+            Returns True if the system is under heavy resource strain.
+            """
+            # 1. Check RAM usage
+            mem = psutil.virtual_memory()
+            if mem.percent > self.mem_threshold:
+                return True
+            
+            # 2. Optional: Check CPU Load (1-minute average)
+            # load1, load5, load15 = psutil.getloadavg()
+            # if load1 > (cpu_count * 1.5): return True
+
+            return False

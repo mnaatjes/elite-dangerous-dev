@@ -5,7 +5,7 @@ from .strategies.library import StrategyLibrary
 
 from .strategies.serialization.atomic import AtomicBinarySerializer, AtomicJSONSerializer, AtomicMsgPackSerializer, AtomicYAMLSerializer
 from .strategies.serialization.stateful import NDJsonSerializer
-from .strategies.integrity import NoOpIntegrity, AtomicSha256Strategy
+from .strategies.integrity import NoOpIntegrity, AtomicSha256Strategy, StreamingSha256Strategy
 
 class PersistenceManager:
     """
@@ -26,6 +26,14 @@ class PersistenceManager:
         # We instantiate this here once so all Orchestrators share it.
         self._monitor = SystemMonitor()
 
+        # 2. Build the Universal Orchestrator
+        # It now receives the library instead of a single profile
+        self.orchestrator = PersistenceOrchestrator(
+            adapter=self._adapter,
+            monitor=self._monitor,
+            library=self.lib
+        )
+
     def _bootstrap_library(self) -> StrategyLibrary:
         lib = StrategyLibrary()
         
@@ -42,24 +50,11 @@ class PersistenceManager:
         # Atomic
         lib.register(NoOpIntegrity, is_default=True)
         lib.register(AtomicSha256Strategy)
+        lib.register(StreamingSha256Strategy)
         # Stateful
 
         # Return Bootstrapped StrategyLibrary
         return lib
     
-    def get_orchestrator(self, target: str):
-        """
-        The User's only necessary call. 
-        It performs the 'Target Analysis' and assembles the engine.
-        """
-        # STEP A: Resolve the Business Rules (Serializer/Integrity)
-        #profile = self._resolver.resolve(target)
-
-        # STEP B: Return the fully-equipped engine
-        """
-        return PersistenceOrchestrator(
-            adapter=self._adapter,
-            monitor=self._monitor,
-            #profile=profile
-        )
-        """
+    def get_orchestrator(self) -> PersistenceOrchestrator:
+        return self.orchestrator

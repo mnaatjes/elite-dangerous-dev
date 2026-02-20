@@ -43,23 +43,27 @@ class StrategyLibrary:
         pool = self._registry.get(category, {})
 
         # 1. SPECIFIC NAME (Highest Priority)
+        # If the user specifically asks for 'msgpack' or 'sha256_stream', give it to them.
         if name and name in pool:
-            manifest = pool[name]
-            # Verify it meets requirements if they were passed
+            return pool[name]
+
+        # 2. CHECK THE DEFAULT FIRST
+        # If a default exists and it can handle the job, use it.
+        # This prevents 'bin' from intercepting 'json''s job for atomic dicts.
+        if category in self._defaults:
+            default_name = self._defaults[category]
+            manifest = pool[default_name]
+            # Check if default supports the flags (e.g., ATOMIC)
             if not required_capabilities or (manifest.capabilities & required_capabilities) == required_capabilities:
                 return manifest
 
-        # 2. CAPABILITY SEARCH (High Priority for Implicit Resolution)
+        # 3. SPECIALIZED CAPABILITY SEARCH (Fallback)
+        # If the default couldn't do it (e.g., NoOp is default but we need a STREAM hash),
+        # look for a specialized strategy that matches the capability.
         if required_capabilities:
-            # Sort so we don't just pick the first one; maybe prioritize defaults here
             for manifest in pool.values():
                 if (manifest.capabilities & required_capabilities) == required_capabilities:
                     return manifest
-
-        # 3. FALLBACK TO DEFAULT (Lowest Priority)
-        if category in self._defaults:
-            default_name = self._defaults[category]
-            return pool[default_name]
 
         return None
 

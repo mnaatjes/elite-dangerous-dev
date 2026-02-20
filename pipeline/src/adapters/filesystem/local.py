@@ -1,7 +1,8 @@
 # --- Libraries ---
-from pathlib import Path
 import shutil
-
+from typing import Union, Generator, IO
+from pathlib import Path
+from contextlib import contextmanager
 # --- Dependencies ---
 from ..abstract import AbstractAdapter
 from ..registry import FilesystemRegistry
@@ -90,18 +91,52 @@ class LocalFilesystemAdapter(AbstractAdapter):
         elif physical_path.is_file():
             physical_path.unlink()
 
-    # --- I/O Methods: Write ---
+    # --- I/O Methods: ATOMIC Write ---
 
-    def write_text(self, target: str, payload: str):
-        """The primary I/O method for the Persistence Orchestrator."""
+    def write_bytes(self, target: str, payload: bytes):
+        """Standard binary write."""
         path = self.resolve(target)
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(payload)
+        return path.write_bytes(payload)
 
-    def write(self, target:str, payload:str):
-        #raise ModuleNotFoundError("Method 'write' is incomplete!")
-        return self.write_text(target, payload)
+    def write_text(self, target: str, payload: str):
+        """Standard text write."""
+        path = self.resolve(target)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        return path.write_text(payload)
+
+    def write(self, target: str, payload: Union[str, bytes]):
+        path = self.resolve(target)
+        path.parent.mkdir(parents=True, exist_ok=True)
+
+        if isinstance(payload, bytes):
+            return path.write_bytes(payload)
+        return path.write_text(str(payload)) # Safely handles strings
     
+
+    # --- I/O Methods: STATEFUL Write ---
+    @contextmanager
+    def open_stream(self, target: str, mode: str = "wb") -> Generator[IO, None, None]:
+        """
+        Provides a managed file handle for streaming I/O.
+        Ensures directories exist and handles are closed automatically.
+        """
+        path = self.resolve(target)
+        
+        # Ensure the 'mkdir -p' behavior
+        path.parent.mkdir(parents=True, exist_ok=True)
+        
+        # Open the handle
+        handle = path.open(mode=mode)
+        
+        try:
+            # Give the handle to the Orchestrator
+            yield handle
+        finally:
+            # This block runs even if an exception occurs in the Orchestrator loop
+            handle.flush()
+            handle.close()
+
     def write_stream(self, target: str, data_generator, mode: str = "wb"):
         """
         Consumes a data stream and writes it to the filesystem in a memory-efficient manner.

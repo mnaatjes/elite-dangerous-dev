@@ -17,7 +17,7 @@ class ExecutionPlan:
     
     # Metadata for Orchestrator routing
     is_stream: bool = False
-    target_mode: str = "wb"
+    target_mode: str = "w"
 
     def __post_init__(self):
         """

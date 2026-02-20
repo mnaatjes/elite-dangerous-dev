@@ -6,12 +6,11 @@ from ..abstracts import StreamingSerializer
 
 class NDJsonSerializer(StreamingSerializer):
     NAME = "ndjson"
-    # Inherits CATEGORY.SERIALIZER and Capability.STREAM from StreamingSerializer
 
     def encode_item(self, item: Any) -> str:
-        """Encodes a single object and adds the Linux newline."""
-        return json.dumps(item) + "\n"
+        # Use separators for compact JSON (removes extra whitespace)
+        # This is better for massive Elite Dangerous star-data files
+        return json.dumps(item, separators=(',', ':')) + "\n"
 
     def finalize(self) -> str:
-        """NDJSON doesn't need footers, so we return an empty string."""
         return ""
