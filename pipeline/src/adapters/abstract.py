@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Any
+from typing import Any, ContextManager
 
 class AbstractAdapter(ABC):
     """
@@ -18,16 +18,6 @@ class AbstractAdapter(ABC):
         pass
 
     @abstractmethod
-    def write(self, target: str, payload: Any) -> None:
-        """Persist the payload to the specific target location."""
-        pass
-
-    @abstractmethod
-    def read(self, target: str) -> Any:
-        """Retrieve the payload from the specific target location."""
-        pass
-
-    @abstractmethod
     def remove(self, target: str) -> None:
         """Delete the resource at the target location."""
         pass
@@ -35,4 +25,29 @@ class AbstractAdapter(ABC):
     @abstractmethod
     def get_capacity(self, path: str) -> int:
         """Returns available capacity at a specific resolved location."""
+        pass
+
+    @abstractmethod
+    def open_text_stream(self, target: str, mode: str) -> ContextManager[Any]:
+        """Provides a handle for line-by-line text I/O (e.g., NDJSON)."""
+        pass
+
+    @abstractmethod
+    def open_bytes_stream(self, target: str, mode: str) -> ContextManager[Any]:
+        """Provides a handle for chunked binary I/O (e.g., Gzip/Compressed)."""
+        pass
+
+    @abstractmethod
+    def write(self, target: str, payload: Any) -> None:
+        """Persist the payload to the specific target location."""
+        pass
+
+    @abstractmethod
+    def read_text(self, target: str) -> str:
+        """Explicitly retrieve as a string."""
+        pass
+
+    @abstractmethod
+    def read_bytes(self, target: str) -> bytes:
+        """Explicitly retrieve as raw bytes."""
         pass

@@ -105,15 +105,6 @@ class LocalFilesystemAdapter(AbstractAdapter):
         path.parent.mkdir(parents=True, exist_ok=True)
         return path.write_text(payload)
 
-    def write(self, target: str, payload: Union[str, bytes]):
-        path = self.resolve(target)
-        path.parent.mkdir(parents=True, exist_ok=True)
-
-        if isinstance(payload, bytes):
-            return path.write_bytes(payload)
-        return path.write_text(str(payload)) # Safely handles strings
-    
-
     # --- I/O Methods: STATEFUL Write ---
     @contextmanager
     def open_stream(self, target: str, mode: str = "wb") -> Generator[IO, None, None]:
@@ -137,30 +128,6 @@ class LocalFilesystemAdapter(AbstractAdapter):
             handle.flush()
             handle.close()
 
-    def write_stream(self, target: str, data_generator, mode: str = "wb"):
-        """
-        Consumes a data stream and writes it to the filesystem in a memory-efficient manner.
-
-        :param target: 
-            The logical string path where the file should be saved.
-            
-        :param data_generator: 
-            An iterable object (typically a generator) that yields chunks of data.
-            This allows handling multi-gigabyte files without loading them into RAM 
-        .
-            
-        :param mode: 
-            The file access mode string (e.g., "wb" or "w"). Defaults to "wb" 
-        .
-        """
-        path = self.resolve(target)
-        path.parent.mkdir(parents=True, exist_ok=True)
-
-        with path.open(mode) as f:
-            # The loop pulls from the generator and writes immediately to the 'sink'
-            for chunk in data_generator:
-                f.write(chunk)
-
     # --- I/O Methods: Read ---
 
     def read(self, target:str):
@@ -182,16 +149,3 @@ class LocalFilesystemAdapter(AbstractAdapter):
         # Split on the FIRST slash only
         key, sub_path = clean_target.split("/", 1)
         return key, sub_path
-        pass
-
-    def get_capacity(self, key: str) -> int:
-        """
-        Returns available [free] size of physical directory resolved from anchor key
-        e.g: "downloads" -> /srv/data/downloads/ -> 1024000
-        """
-        # 1. Resolve 'STAR_DATA' -> '/var/lib/edsm/' via Registry
-        physical_path = self.resolve(key)
-        
-        # 2. Perform the Linux check
-        total, used, free = shutil.disk_usage(physical_path)
-        return free
