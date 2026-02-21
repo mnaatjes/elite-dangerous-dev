@@ -2,7 +2,7 @@
 import pytest
 from src.config import settings
 from src.adapters import AdapterFactory
-
+from src.gateways import Gateway
 
 @pytest.fixture(scope="session")
 def adapter():
@@ -10,4 +10,4 @@ def adapter():
 
 @pytest.fixture(scope="session")
 def gateway(adapter):
-    pass
+    print(Gateway(adapter))
